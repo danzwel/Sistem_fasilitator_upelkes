@@ -1,0 +1,19 @@
+const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+
+function DisplayValue({ value }) { return <strong>{value === null || value === undefined ? '—' : value}</strong> }
+
+export function DashboardPage({ data, onNavigate }) {
+  const today = new Date()
+  const days = Array.from({ length: 35 }, (_, index) => index - (new Date(today.getFullYear(), today.getMonth(), 1).getDay() || 7) + 1)
+  return <div className="dashboard page-enter">
+    <div className="welcome-row"><div><p className="eyebrow">RINGKASAN ADMINISTRASI</p><h2>Selamat datang, Admin <span>✦</span></h2><p className="muted">Pantau data fasilitator dan kegiatan UPELKES dalam satu tempat.</p></div><button className="outline-button" onClick={() => onNavigate('fasilitator')}>Lihat data fasilitator →</button></div>
+    <section className="stats-grid">{data.stats.map(stat => <article className={`stat-card ${stat.tone}`} key={stat.key}><div className="stat-top"><span className="stat-icon">{stat.icon}</span><span className="status-dot">●</span></div><p>{stat.label}</p><DisplayValue value={stat.value} /></article>)}</section>
+    <div className="content-grid">
+      <section className="panel activity-panel"><div className="panel-heading"><div><p className="eyebrow">AGENDA</p><h3>Pengingat kegiatan</h3></div><button className="text-button" onClick={() => onNavigate('pelatihan')}>Lihat semua →</button></div>{data.upcomingActivities.length ? data.upcomingActivities.map(item => <div className="activity-row" key={item.id}><div className="date-box"><b>{item.day}</b><span>{item.month}</span></div><div><b>{item.name}</b><p>{item.facilitator} · {item.status}</p></div></div>) : <EmptyState text="Belum ada kegiatan terdekat." />}</section>
+      <section className="panel calendar-panel"><div className="panel-heading"><div><p className="eyebrow">JADWAL</p><h3>{monthNames[today.getMonth()]} {today.getFullYear()}</h3></div><div className="calendar-nav"><button aria-label="Bulan sebelumnya">‹</button><button aria-label="Bulan berikutnya">›</button></div></div><div className="calendar-grid weekdays">{['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(day => <span key={day}>{day}</span>)}</div><div className="calendar-grid">{days.map((day, i) => <span className={`${day === today.getDate() ? 'today' : ''} ${day < 1 || day > 31 ? 'outside' : ''}`} key={i}>{day > 0 && day <= 31 ? day : ''}</span>)}</div><p className="calendar-note">{data.calendarActivities.length ? `${data.calendarActivities.length} agenda tersimpan` : 'Agenda kalender akan muncul dari database.'}</p></section>
+    </div>
+    <div className="bottom-grid"><section className="panel"><div className="panel-heading"><div><p className="eyebrow">MONITORING RINGKAS</p><h3>Kelengkapan data</h3></div><button className="text-button" onClick={() => onNavigate('monitoring')}>Detail monitoring →</button></div><div className="monitor-list">{data.monitoring.map(item => <div className="monitor-row" key={item.key}><span className="monitor-bullet">!</span><span>{item.label}</span><DisplayValue value={item.value} /></div>)}</div></section><section className="panel quick-panel"><div className="panel-heading"><div><p className="eyebrow">AKSES CEPAT</p><h3>Quick action</h3></div></div><div className="quick-actions"><button onClick={() => onNavigate('fasilitator')}>＋ Tambah Fasilitator</button><button onClick={() => onNavigate('pelatihan')}>＋ Tambah Pelatihan</button><button onClick={() => onNavigate('fasilitator')}>⇧ Import Excel</button><button onClick={() => onNavigate('pencarian')}>⌕ Cari Fasilitator</button><button onClick={() => onNavigate('fasilitator')}>▤ Generate CV</button></div></section></div>
+  </div>
+}
+
+function EmptyState({ text }) { return <div className="empty-state"><span>◌</span><p>{text}</p><small>Data akan tampil setelah terhubung ke database.</small></div> }
