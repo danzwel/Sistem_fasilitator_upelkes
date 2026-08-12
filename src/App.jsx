@@ -6,10 +6,11 @@ import { SearchPage } from './modules/search/pages/SearchPage'
 import { CompetencyProfilePage } from './modules/competency/pages/CompetencyProfilePage'
 import { AppShell } from './shared/layout/AppShell'
 import { PlaceholderPage } from './shared/pages/PlaceholderPage'
+import { FasilitatorPage } from './modules/fasilitator/pages/FasilitatorPage'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
-  fasilitator: { label: 'Fasilitator', component: PlaceholderPage, owner: 'Sofi' },
+  fasilitator: { label: 'Fasilitator', component: FasilitatorPage },
   pelatihan: { label: 'Pelatihan', component: PlaceholderPage, owner: 'Sofi' },
   monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
   pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },
