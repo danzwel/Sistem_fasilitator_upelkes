@@ -10,3 +10,12 @@
 .status-badge{display:inline-block;padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em}
 .status-badge.lengkap{background:#1d4a3d;color:#6fd6ae}
 .status-badge.belum_lengkap{background:#4a3620;color:#e6a866}
+
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.form-field{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#a49bb6;font-weight:600}
+.form-field input{background:#211a30;border:1px solid #3e3451;border-radius:10px;padding:11px 13px;color:#f0ecff;font:400 14px 'DM Sans',sans-serif;outline:none}
+.form-field input:focus{border-color:#bd68f1}
+.required-mark{color:#e6a8bd}
+.field-error{color:#e6a8bd;font-weight:500;font-size:11px}
+@media(max-width:760px){.form-grid{grid-template-columns:1fr}}
+

@@ -7,10 +7,13 @@ import { CompetencyProfilePage } from './modules/competency/pages/CompetencyProf
 import { AppShell } from './shared/layout/AppShell'
 import { PlaceholderPage } from './shared/pages/PlaceholderPage'
 import { FasilitatorPage } from './modules/fasilitator/pages/FasilitatorPage'
+import { FasilitatorFormPage } from './modules/fasilitator/pages/FasilitatorFormPage'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
   fasilitator: { label: 'Fasilitator', component: FasilitatorPage },
+  'fasilitator-tambah': { label: 'Tambah Fasilitator', component: FasilitatorFormPage },
+  'fasilitator-detail': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
   pelatihan: { label: 'Pelatihan', component: PlaceholderPage, owner: 'Sofi' },
   monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
   pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },
@@ -23,9 +26,22 @@ export default function App() {
   const page = pages[activePage]
   const Page = page.component
 
+  function handleNavigate(pageId, facilitatorId = null) {
+    setSelectedFacilitatorId(facilitatorId)
+    setActivePage(pageId)
+  }
+
   return (
-    <AppShell activePage={activePage} onNavigate={setActivePage}>
-      <Page data={dashboardData} title={page.label} owner={page.owner} onNavigate={setActivePage} selectedFacilitatorId={selectedFacilitatorId} onSelectFacilitator={(id) => { setSelectedFacilitatorId(id); setActivePage('kompetensi') }} />
+    <AppShell activePage={activePage} onNavigate={handleNavigate}>
+      <Page
+        data={dashboardData}
+        title={page.label}
+        owner={page.owner}
+        onNavigate={handleNavigate}
+        facilitatorId={selectedFacilitatorId}
+        selectedFacilitatorId={selectedFacilitatorId}
+        onSelectFacilitator={(id) => handleNavigate('kompetensi', id)}
+      />
     </AppShell>
   )
 }
