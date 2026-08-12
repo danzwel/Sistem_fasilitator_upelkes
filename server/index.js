@@ -32,13 +32,16 @@ const server = createServer(async (request, response) => {
     }
     if (request.method === 'GET' && url.pathname === '/api/facilitators/monitoring') return json(response, 200, { data: facilitators.monitoring(url.searchParams.get('filter') || '') })
     if (request.method === 'GET' && url.pathname === '/api/facilitators/search') return json(response, 200, { data: facilitators.search(Object.fromEntries(url.searchParams)) })
+    if (request.method === 'GET' && url.pathname === '/api/facilitators') return json(response, 200, { data: facilitators.listFacilitators() })
     const profileId = route(url, /^\/api\/facilitators\/(\d+)\/competency-profile$/)
     if (request.method === 'GET' && profileId) { const data = facilitators.competencyProfile(Number(profileId[0])); return data ? json(response, 200, data) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     const reviewId = route(url, /^\/api\/facilitators\/(\d+)\/reviews$/)
     if (request.method === 'POST' && reviewId) { if (!protect(request, response)) return; const input = await readJson(request); if (access(request)) input.authorName ||= access(request).name; const errors = validateReview(input); if (Object.keys(errors).length) return invalid(response, errors); const review = facilitators.createReview(Number(reviewId[0]), input); return review ? json(response, 201, { data: review }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     if (request.method === 'POST' && url.pathname === '/api/facilitators') { if (!protect(request, response)) return; const input = await readJson(request); const errors = validateFacilitator(input); if (Object.keys(errors).length) return invalid(response, errors); return json(response, 201, { data: facilitators.createFacilitator(input) }) }
     const facilitatorId = route(url, /^\/api\/facilitators\/(\d+)$/)
+    if (request.method === 'GET' && facilitatorId) { const data = facilitators.getFacilitator(Number(facilitatorId[0])); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     if (request.method === 'PUT' && facilitatorId) { if (!protect(request, response)) return; const input = await readJson(request); const errors = validateFacilitator({ ...input, name: input.name || 'existing' }); if (Object.keys(errors).length) return invalid(response, errors); const data = facilitators.updateFacilitator(Number(facilitatorId[0]), input); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
+    if (request.method === 'DELETE' && facilitatorId) { if (!protect(request, response)) return; const data = facilitators.deleteFacilitator(Number(facilitatorId[0])); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     return json(response, 404, { message: 'Endpoint tidak ditemukan.' })
   } catch (error) { console.error(error); return json(response, error.status || 500, { message: error.message || 'Terjadi kesalahan server.' }) }
 })
