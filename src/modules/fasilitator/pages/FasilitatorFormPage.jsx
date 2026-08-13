@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { fasilitatorList, getFasilitatorById } from '../data/fasilitatorData'
-import { createFacilitator, updateFacilitator } from '../api/facilitatorApi'
+import { useEffect, useState } from 'react'
+import { getFacilitatorById, createFacilitator, updateFacilitator } from '../api/facilitatorApi'
 
 const EMPTY_FORM = {
   nama: '',
@@ -9,13 +8,29 @@ const EMPTY_FORM = {
   tanggalLahir: '',
   nik: '',
   nip: '',
-  pangkatGolongan: '',
+  pangkatGolongan: '', // TODO: backend belum punya kolom ini, lihat catatan di handleSubmit
   jabatan: '',
   unitKerja: '',
-  alamatKantor: '',
+  alamatKantor: '', // TODO: digabung manual ke satu field `address`, lihat catatan di handleSubmit
   alamatRumah: '',
   noHp: '',
   email: '',
+}
+
+// Backend cuma punya 1 field `birthInfo` & 1 field `address`, sedangkan
+// form kita (mengikuti Template_CV_Narasumber) butuh masing-masing 2.
+// Sambil nunggu Daniel nambah kolom, kita gabung jadi 1 string terformat
+// supaya datanya nggak hilang, dan tetap bisa "dipecah lagi" pas nanti
+// ditampilkan (lihat splitBirthInfo/splitAddress di bawah).
+function combineBirthInfo(tempatLahir, tanggalLahir) {
+  return [tempatLahir, tanggalLahir].filter(Boolean).join(', ')
+}
+
+function combineAddress(alamatKantor, alamatRumah) {
+  const parts = []
+  if (alamatKantor) parts.push(`Kantor: ${alamatKantor}`)
+  if (alamatRumah) parts.push(`Rumah: ${alamatRumah}`)
+  return parts.join(' | ')
 }
 
 const FIELD_GROUPS = [
@@ -51,12 +66,37 @@ const FIELD_GROUPS = [
 
 export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
   const isEdit = Boolean(facilitatorId)
-  const existing = isEdit ? getFasilitatorById(facilitatorId) : null
 
-  const [form, setForm] = useState(() => ({ ...EMPTY_FORM, ...(existing ?? {}) }))
+  const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [pangkatWarningShown, setPangkatWarningShown] = useState(false)
+
+  useEffect(() => {
+    if (!isEdit) return
+    getFacilitatorById(facilitatorId)
+      .then((f) => {
+        setForm({
+          nama: f.name ?? '',
+          gelar: f.degree ?? '',
+          tempatLahir: '', // birthInfo backend cuma 1 string, nggak otomatis kepisah balik
+          tanggalLahir: '',
+          nik: f.nik ?? '',
+          nip: f.nip ?? '',
+          pangkatGolongan: '',
+          jabatan: f.position ?? '',
+          unitKerja: f.unit ?? '',
+          alamatKantor: '',
+          alamatRumah: '',
+          noHp: f.phone ?? '',
+          email: f.email ?? '',
+        })
+      })
+      .catch((err) => setSubmitError(err.message))
+      .finally(() => setLoading(false))
+  }, [isEdit, facilitatorId])
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -82,29 +122,47 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
     e.preventDefault()
     if (!validate()) return
 
+    // TODO(konfirmasi Daniel): pangkatGolongan nggak dikirim sama sekali
+    // karena backend belum punya kolomnya. Data ini akan HILANG sampai
+    // Daniel nambah field `pangkatGolongan`/`rank` di schema.
+    const payload = {
+      nama: form.nama,
+      gelar: form.gelar,
+      birthInfo: combineBirthInfo(form.tempatLahir, form.tanggalLahir),
+      nik: form.nik,
+      nip: form.nip,
+      jabatan: form.jabatan,
+      unitKerja: form.unitKerja,
+      alamat: combineAddress(form.alamatKantor, form.alamatRumah), // digabung, lihat catatan di atas
+      noHp: form.noHp,
+      email: form.email,
+    }
+
     setSubmitting(true)
     setSubmitError(null)
     try {
       if (isEdit) {
-        await updateFacilitator(facilitatorId, form)
-        const idx = fasilitatorList.findIndex((f) => f.id === facilitatorId)
-        if (idx !== -1) fasilitatorList[idx] = { ...fasilitatorList[idx], ...form }
+        await updateFacilitator(facilitatorId, payload)
       } else {
-        await createFacilitator(form)
-        fasilitatorList.unshift({
-          ...form,
-          id: `fas-${Date.now()}`,
-          statusKelengkapan: 'belum_lengkap',
-        })
+        await createFacilitator(payload)
       }
       onNavigate?.('fasilitator')
     } catch (err) {
-      // Backend Daniel mungkin belum siap / endpoint belum sesuai kontrak.
-      // Tampilkan errornya apa adanya, jangan sok tahu alasannya.
       setSubmitError(err.message)
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <section className="page-enter">
+        <div className="empty-state">
+          <span>◌</span>
+          <p>Memuat data fasilitator...</p>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -130,6 +188,14 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
           <span className="muted">{submitError}</span>
         </div>
       )}
+
+      <div className="panel" style={{ borderColor: '#ad6b40', marginBottom: 18 }}>
+        <span className="muted">
+          ⚠️ Field <strong>Pangkat/Golongan</strong> belum bisa disimpan — backend belum punya kolomnya.
+          Field <strong>Alamat Kantor</strong> & <strong>Alamat Rumah</strong> untuk sementara digabung jadi satu
+          teks (backend cuma punya 1 kolom alamat). Ini sudah dikonfirmasi ke Daniel.
+        </span>
+      </div>
 
       <form onSubmit={handleSubmit}>
         {FIELD_GROUPS.map((group) => (

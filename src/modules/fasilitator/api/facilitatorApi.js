@@ -1,65 +1,56 @@
-// src/modules/fasilitator/api/facilitatorApi.js
-//
-// Lapisan pemanggilan API ke backend Daniel. Base URL & endpoint yang
-// SUDAH DIKONFIRMASI di docs/DANIEL_API_CONTRACT.md: POST /api/facilitators
-// dan PUT /api/facilitators/:id.
-//
-// TODO(konfirmasi Daniel): body/response shape endpoint ini belum
-// didetailkan di kontrak. Field di bawah pakai nama yang sudah kita
-// sepakati di fasilitatorData.js. Kalau Daniel balas dengan nama field
-// yang beda (mis. snake_case seperti "photo" di requirements[]
-// monitoring), cukup ubah `toApiPayload` di bawah — komponen form TIDAK
-// perlu diubah.
-
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 function toApiPayload(fasilitator) {
-  // Mapping field internal (Indonesia) -> field yang diharapkan backend
-  // Daniel (Inggris). Ditemukan satu-satu dari pesan error validasi 422,
-  // karena kontraknya belum didokumentasikan lengkap. Tambahkan mapping
-  // baru di sini setiap kali ada error "X wajib diisi" untuk field yang
-  // belum ada di bawah.
   return {
-    // TODO: field lain (gelar, nik, nip, dst) masih dikirim pakai nama
-    // Indonesia apa adanya — backend belum pernah komplain soal field
-    // ini, tapi belum tentu artinya sudah benar/tersimpan. Konfirmasi
-    // ke Daniel field mana aja yang dia baca, lalu tambahkan mapping-nya
-    // di sini kalau ternyata beda (seperti "name" di bawah).
-    ...fasilitator,
-    name: fasilitator.nama,
+    name: fasilitator.nama ?? fasilitator.name,
+    degree: fasilitator.gelar ?? fasilitator.degree ?? null,
+    birthInfo: fasilitator.birthInfo ?? null,
+    nik: fasilitator.nik ?? null,
+    nip: fasilitator.nip ?? null,
+    position: fasilitator.jabatan ?? fasilitator.position ?? null,
+    unit: fasilitator.unitKerja ?? fasilitator.unit ?? null,
+    address: fasilitator.alamat ?? fasilitator.address ?? null,
+    phone: fasilitator.noHp ?? fasilitator.phone ?? null,
+    email: fasilitator.email ?? null,
+    photoUrl: fasilitator.fotoUrl ?? fasilitator.photoUrl ?? null,
+    signatureUrl: fasilitator.ttdUrl ?? fasilitator.signatureUrl ?? null,
+    status: fasilitator.status ?? 'active',
+    competencies: fasilitator.kompetensi ?? fasilitator.competencies ?? [],
   }
 }
 
 async function handleResponse(response) {
+  const body = await response.json().catch(() => ({}))
   if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(
-      `Request gagal (${response.status}): ${body || response.statusText}`
-    )
+    throw new Error(body.message || `Request gagal (${response.status}): ${response.statusText}`)
   }
-  return response.json()
+  return body.data ?? body
 }
 
-export async function createFacilitator(fasilitator) {
-  const response = await fetch(`${API_BASE_URL}/api/facilitators`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(toApiPayload(fasilitator)),
+async function request(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...options.headers },
+    ...options,
   })
   return handleResponse(response)
 }
 
-export async function updateFacilitator(id, fasilitator) {
-  const response = await fetch(`${API_BASE_URL}/api/facilitators/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(toApiPayload(fasilitator)),
-  })
-  return handleResponse(response)
+export function getFacilitators() {
+  return request('/facilitators')
 }
 
-// TODO(minta ke Daniel): belum ada endpoint GET list/detail/DELETE.
-// Begitu tersedia, tambahkan fungsi getFacilitators() dan
-// getFacilitatorById(id) di sini, lalu ganti pemakaian `fasilitatorList`
-// dummy di FasilitatorPage.jsx & FasilitatorFormPage.jsx dengan
-// pemanggilan fungsi ini.
+export function getFacilitatorById(id) {
+  return request(`/facilitators/${id}`)
+}
+
+export function createFacilitator(fasilitator) {
+  return request('/facilitators', { method: 'POST', body: JSON.stringify(toApiPayload(fasilitator)) })
+}
+
+export function updateFacilitator(id, fasilitator) {
+  return request(`/facilitators/${id}`, { method: 'PUT', body: JSON.stringify(toApiPayload(fasilitator)) })
+}
+
+export function deleteFacilitator(id) {
+  return request(`/facilitators/${id}`, { method: 'DELETE' })
+}

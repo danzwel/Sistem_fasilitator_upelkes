@@ -8,12 +8,14 @@ import { AppShell } from './shared/layout/AppShell'
 import { PlaceholderPage } from './shared/pages/PlaceholderPage'
 import { FasilitatorPage } from './modules/fasilitator/pages/FasilitatorPage'
 import { FasilitatorFormPage } from './modules/fasilitator/pages/FasilitatorFormPage'
+import { FasilitatorDetailPage } from './modules/fasilitator/pages/FasilitatorDetailPage'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
   fasilitator: { label: 'Fasilitator', component: FasilitatorPage },
   'fasilitator-tambah': { label: 'Tambah Fasilitator', component: FasilitatorFormPage },
-  'fasilitator-detail': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
+  'fasilitator-edit': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
+  'fasilitator-detail': { label: 'Detail Fasilitator', component: FasilitatorDetailPage },
   pelatihan: { label: 'Pelatihan', component: PlaceholderPage, owner: 'Sofi' },
   monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
   pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },

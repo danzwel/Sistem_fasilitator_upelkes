@@ -4,10 +4,13 @@ Modul Daniel hanya memakai data dari master fasilitator/pelatihan milik Sofi.
 
 | Endpoint | Kegunaan |
 | --- | --- |
+| `GET /api/facilitators` | daftar master fasilitator |
+| `GET /api/facilitators/:id` | detail master fasilitator |
 | `GET /api/facilitators/monitoring?filter=` | tabel kelengkapan |
 | `GET /api/facilitators/search?query=&competency=&min_rating=&status=` | pencarian server-side |
 | `GET /api/facilitators/:id/competency-profile` | profil kompetensi |
 | `POST /api/facilitators/:id/reviews` | body: `{ authorName, rating: 1..5, comment }` |
+| `DELETE /api/facilitators/:id` | menghapus fasilitator beserta data terkait |
 
 Endpoint monitoring mengembalikan `requirements[]` sebagai sumber kebenaran:
 
