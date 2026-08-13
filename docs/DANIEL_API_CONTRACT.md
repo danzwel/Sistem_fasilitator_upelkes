@@ -53,7 +53,18 @@ Tabel `trainings` dipakai untuk dua jenis data tersebut. `category=related_train
 
 Field opsional riwayat: `material`, `organizer`, `role`, `category`, `certificateUrl`, `notes`.
 
-Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body: `{ institution, degree, graduationYear }`.
+Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body utama:
+
+```json
+{
+  "institution": "Universitas Pendidikan Indonesia",
+  "degree": "S2 Administrasi Pendidikan",
+  "startDate": "2023-09",
+  "endDate": "2025-09"
+}
+```
+
+`startDate` dan `endDate` memakai format `YYYY-MM` agar CV dapat menampilkan bulan dan tahun masuk/lulus. `graduationYear` lama tetap diterima untuk kompatibilitas; jika `endDate` dikirim, tahun lulus juga disimpan otomatis dari tanggal tersebut.
 
 ## Mapping langsung ke Template CV Narasumber
 
