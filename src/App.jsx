@@ -9,6 +9,7 @@ import { PlaceholderPage } from './shared/pages/PlaceholderPage'
 import { FasilitatorPage } from './modules/fasilitator/pages/FasilitatorPage'
 import { FasilitatorFormPage } from './modules/fasilitator/pages/FasilitatorFormPage'
 import { FasilitatorDetailPage } from './modules/fasilitator/pages/FasilitatorDetailPage'
+import { CvPreviewPage } from './modules/cv/pages/CvPreviewPage'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
@@ -16,6 +17,7 @@ const pages = {
   'fasilitator-tambah': { label: 'Tambah Fasilitator', component: FasilitatorFormPage },
   'fasilitator-edit': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
   'fasilitator-detail': { label: 'Detail Fasilitator', component: FasilitatorDetailPage },
+  'fasilitator-cv': { label: 'CV Fasilitator', component: CvPreviewPage },
   pelatihan: { label: 'Pelatihan', component: PlaceholderPage, owner: 'Sofi' },
   monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
   pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },

@@ -1,98 +1,90 @@
 import { useEffect, useState } from 'react'
+import { useRef } from 'react'
 import { getFacilitatorById, createFacilitator, updateFacilitator } from '../api/facilitatorApi'
+import { uploadFacilitatorPhoto, uploadFacilitatorSignature } from '../api/facilitatorUploadApi'
+import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { EducationSection } from '../components/EducationSection'
+import { CompetencySection } from '../components/CompetencySection'
+import { TrainingSection } from '../components/TrainingSection'
 
 const EMPTY_FORM = {
-  nama: '',
-  gelar: '',
-  tempatLahir: '',
-  tanggalLahir: '',
-  nik: '',
-  nip: '',
-  pangkatGolongan: '', // TODO: backend belum punya kolom ini, lihat catatan di handleSubmit
-  jabatan: '',
-  unitKerja: '',
-  alamatKantor: '', // TODO: digabung manual ke satu field `address`, lihat catatan di handleSubmit
-  alamatRumah: '',
-  noHp: '',
-  email: '',
+  nama: '', gelar: '', tempatLahir: '', tanggalLahir: '', nik: '', nip: '',
+  pangkatGolongan: '', jabatan: '', unitKerja: '', alamatKantor: '', alamatRumah: '',
+  noHp: '', email: '',
 }
 
-// Backend cuma punya 1 field `birthInfo` & 1 field `address`, sedangkan
-// form kita (mengikuti Template_CV_Narasumber) butuh masing-masing 2.
-// Sambil nunggu Daniel nambah kolom, kita gabung jadi 1 string terformat
-// supaya datanya nggak hilang, dan tetap bisa "dipecah lagi" pas nanti
-// ditampilkan (lihat splitBirthInfo/splitAddress di bawah).
 function combineBirthInfo(tempatLahir, tanggalLahir) {
   return [tempatLahir, tanggalLahir].filter(Boolean).join(', ')
 }
 
-function combineAddress(alamatKantor, alamatRumah) {
-  const parts = []
-  if (alamatKantor) parts.push(`Kantor: ${alamatKantor}`)
-  if (alamatRumah) parts.push(`Rumah: ${alamatRumah}`)
-  return parts.join(' | ')
-}
-
 const FIELD_GROUPS = [
-  {
-    title: 'Identitas',
-    fields: [
-      ['nama', 'Nama Lengkap', 'text', true],
-      ['gelar', 'Gelar', 'text', false],
-      ['tempatLahir', 'Tempat Lahir', 'text', false],
-      ['tanggalLahir', 'Tanggal Lahir', 'date', false],
-      ['nik', 'NIK', 'text', true],
-      ['nip', 'NIP', 'text', false],
-    ],
-  },
-  {
-    title: 'Kepegawaian',
-    fields: [
-      ['pangkatGolongan', 'Pangkat / Golongan', 'text', false],
-      ['jabatan', 'Jabatan', 'text', true],
-      ['unitKerja', 'Unit Kerja', 'text', true],
-    ],
-  },
-  {
-    title: 'Kontak & Alamat',
-    fields: [
-      ['alamatKantor', 'Alamat Kantor', 'text', false],
-      ['alamatRumah', 'Alamat Rumah', 'text', false],
-      ['noHp', 'No. HP', 'text', true],
-      ['email', 'Email', 'email', true],
-    ],
-  },
+  { title: 'Identitas', fields: [
+    ['nama', 'Nama Lengkap', 'text', true],
+    ['gelar', 'Gelar', 'text', false],
+    ['tempatLahir', 'Tempat Lahir', 'text', false],
+    ['tanggalLahir', 'Tanggal Lahir', 'date', false],
+    ['nik', 'NIK', 'text', true],
+    ['nip', 'NIP', 'text', false],
+  ]},
+  { title: 'Kepegawaian', fields: [
+    ['pangkatGolongan', 'Pangkat / Golongan', 'text', false],
+    ['jabatan', 'Jabatan', 'text', true],
+    ['unitKerja', 'Unit Kerja', 'text', true],
+  ]},
+  { title: 'Kontak & Alamat', fields: [
+    ['alamatKantor', 'Alamat Kantor', 'text', false],
+    ['alamatRumah', 'Alamat Rumah', 'text', false],
+    ['noHp', 'No. HP', 'text', true],
+    ['email', 'Email', 'email', true],
+  ]},
 ]
+
+function FileSlot({ label, previewUrl, onSelect }) {
+  const inputRef = useRef(null)
+  return (
+    <label className="form-field">
+      <span>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {previewUrl && <img src={previewUrl} alt={label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />}
+        <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={(e) => onSelect(e.target.files?.[0] ?? null)} />
+        <button type="button" className="outline-button" onClick={() => inputRef.current?.click()}>
+          {previewUrl ? 'Ganti file' : 'Pilih file'}
+        </button>
+      </div>
+    </label>
+  )
+}
 
 export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
   const isEdit = Boolean(facilitatorId)
 
   const [form, setForm] = useState(EMPTY_FORM)
+  const [competencies, setCompetencies] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
-  const [pangkatWarningShown, setPangkatWarningShown] = useState(false)
+  const [submitStep, setSubmitStep] = useState(null)
+
+  const [photoFile, setPhotoFile] = useState(null)
+  const [signatureFile, setSignatureFile] = useState(null)
+  const [existingPhotoUrl, setExistingPhotoUrl] = useState(null)
+  const [existingSignatureUrl, setExistingSignatureUrl] = useState(null)
 
   useEffect(() => {
     if (!isEdit) return
     getFacilitatorById(facilitatorId)
       .then((f) => {
         setForm({
-          nama: f.name ?? '',
-          gelar: f.degree ?? '',
-          tempatLahir: '', // birthInfo backend cuma 1 string, nggak otomatis kepisah balik
-          tanggalLahir: '',
-          nik: f.nik ?? '',
-          nip: f.nip ?? '',
-          pangkatGolongan: '',
-          jabatan: f.position ?? '',
-          unitKerja: f.unit ?? '',
-          alamatKantor: '',
-          alamatRumah: '',
-          noHp: f.phone ?? '',
-          email: f.email ?? '',
+          nama: f.name ?? '', gelar: f.degree ?? '', tempatLahir: f.birthInfo ?? '', tanggalLahir: '',
+          nik: f.nik ?? '', nip: f.nip ?? '', pangkatGolongan: f.rank ?? '', jabatan: f.position ?? '',
+          unitKerja: f.unit ?? '', alamatKantor: f.officeAddress ?? '', alamatRumah: f.homeAddress ?? '',
+          noHp: f.phone ?? '', email: f.email ?? '',
         })
+        setCompetencies(f.competencies ?? [])
+        setExistingPhotoUrl(f.photoUrl ?? null)
+        setExistingSignatureUrl(f.signatureUrl ?? null)
       })
       .catch((err) => setSubmitError(err.message))
       .finally(() => setLoading(false))
@@ -106,14 +98,10 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
     const nextErrors = {}
     for (const group of FIELD_GROUPS) {
       for (const [key, label, , required] of group.fields) {
-        if (required && !form[key]?.trim()) {
-          nextErrors[key] = `${label} wajib diisi`
-        }
+        if (required && !form[key]?.trim()) nextErrors[key] = `${label} wajib diisi`
       }
     }
-    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) {
-      nextErrors.email = 'Format email tidak valid'
-    }
+    if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) nextErrors.email = 'Format email tidak valid'
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
   }
@@ -122,47 +110,53 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
     e.preventDefault()
     if (!validate()) return
 
-    // TODO(konfirmasi Daniel): pangkatGolongan nggak dikirim sama sekali
-    // karena backend belum punya kolomnya. Data ini akan HILANG sampai
-    // Daniel nambah field `pangkatGolongan`/`rank` di schema.
     const payload = {
-      nama: form.nama,
-      gelar: form.gelar,
+      ...form,
       birthInfo: combineBirthInfo(form.tempatLahir, form.tanggalLahir),
-      nik: form.nik,
-      nip: form.nip,
-      jabatan: form.jabatan,
-      unitKerja: form.unitKerja,
-      alamat: combineAddress(form.alamatKantor, form.alamatRumah), // digabung, lihat catatan di atas
-      noHp: form.noHp,
-      email: form.email,
+      competencies,
     }
 
     setSubmitting(true)
     setSubmitError(null)
     try {
+      let savedId = facilitatorId
+      setSubmitStep('Menyimpan biodata...')
       if (isEdit) {
         await updateFacilitator(facilitatorId, payload)
       } else {
-        await createFacilitator(payload)
+        const created = await createFacilitator(payload)
+        savedId = created.id
       }
-      onNavigate?.('fasilitator')
+
+      const uploadWarnings = []
+      if (photoFile) {
+        setSubmitStep('Mengunggah foto...')
+        try { await uploadFacilitatorPhoto(savedId, photoFile) }
+        catch (err) { uploadWarnings.push(`Foto gagal diunggah: ${err.message}`) }
+      }
+      if (signatureFile) {
+        setSubmitStep('Mengunggah TTD...')
+        try { await uploadFacilitatorSignature(savedId, signatureFile) }
+        catch (err) { uploadWarnings.push(`TTD gagal diunggah: ${err.message}`) }
+      }
+
+      if (uploadWarnings.length > 0) {
+        setSubmitError(`Biodata tersimpan, tapi ada masalah: ${uploadWarnings.join(' ')} Kamu bisa unggah ulang dari sini.`)
+        setSubmitting(false)
+        setSubmitStep(null)
+        return
+      }
+
+      onNavigate?.(isEdit ? 'fasilitator-detail' : 'fasilitator-edit', savedId)
     } catch (err) {
       setSubmitError(err.message)
-    } finally {
       setSubmitting(false)
+      setSubmitStep(null)
     }
   }
 
   if (loading) {
-    return (
-      <section className="page-enter">
-        <div className="empty-state">
-          <span>◌</span>
-          <p>Memuat data fasilitator...</p>
-        </div>
-      </section>
-    )
+    return <section className="page-enter"><div className="empty-state"><span>◌</span><p>Memuat data fasilitator...</p></div></section>
   }
 
   return (
@@ -171,50 +165,29 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
         <div>
           <p className="eyebrow">MODUL SOFI</p>
           <h2>{isEdit ? 'Edit Fasilitator' : 'Tambah Fasilitator'}</h2>
-          <p className="muted">
-            {isEdit
-              ? 'Perbarui biodata fasilitator.'
-              : 'Isi biodata inti fasilitator. Riwayat pendidikan, materi, dan pelatihan ditambahkan setelah data ini tersimpan.'}
-          </p>
+          <p className="muted">Isi biodata, foto, TTD, materi, riwayat pendidikan, dan pengalaman mengajar.</p>
         </div>
-        <button className="outline-button" onClick={() => onNavigate?.('fasilitator')}>
+        <button className="outline-button" onClick={() => onNavigate?.(isEdit ? 'fasilitator-detail' : 'fasilitator', facilitatorId)}>
           ← Kembali
         </button>
       </div>
 
       {submitError && (
         <div className="panel" style={{ borderColor: '#a84978', marginBottom: 18 }}>
-          <strong style={{ color: '#e6a8bd' }}>Gagal menyimpan:</strong>{' '}
+          <strong style={{ color: '#e6a8bd' }}>{submitError.startsWith('Biodata tersimpan') ? 'Perlu perhatian:' : 'Gagal menyimpan:'}</strong>{' '}
           <span className="muted">{submitError}</span>
         </div>
       )}
 
-      <div className="panel" style={{ borderColor: '#ad6b40', marginBottom: 18 }}>
-        <span className="muted">
-          ⚠️ Field <strong>Pangkat/Golongan</strong> belum bisa disimpan — backend belum punya kolomnya.
-          Field <strong>Alamat Kantor</strong> & <strong>Alamat Rumah</strong> untuk sementara digabung jadi satu
-          teks (backend cuma punya 1 kolom alamat). Ini sudah dikonfirmasi ke Daniel.
-        </span>
-      </div>
-
-      <form onSubmit={handleSubmit}>
+      <form id="facilitator-form" onSubmit={handleSubmit}>
         {FIELD_GROUPS.map((group) => (
           <div className="panel" key={group.title} style={{ marginBottom: 18 }}>
-            <div className="panel-heading">
-              <h3>{group.title}</h3>
-            </div>
+            <div className="panel-heading"><h3>{group.title}</h3></div>
             <div className="form-grid">
               {group.fields.map(([key, label, type, required]) => (
                 <label className="form-field" key={key}>
-                  <span>
-                    {label}
-                    {required && <span className="required-mark"> *</span>}
-                  </span>
-                  <input
-                    type={type}
-                    value={form[key] ?? ''}
-                    onChange={(e) => updateField(key, e.target.value)}
-                  />
+                  <span>{label}{required && <span className="required-mark"> *</span>}</span>
+                  <input type={type} value={form[key] ?? ''} onChange={(e) => updateField(key, e.target.value)} />
                   {errors[key] && <small className="field-error">{errors[key]}</small>}
                 </label>
               ))}
@@ -222,20 +195,52 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
           </div>
         ))}
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Simpan Fasilitator'}
-          </button>
-          <button
-            type="button"
-            className="outline-button"
-            onClick={() => onNavigate?.('fasilitator')}
-            disabled={submitting}
-          >
-            Batal
-          </button>
+        <div className="panel" style={{ marginBottom: 18 }}>
+          <div className="panel-heading"><h3>Foto & TTD</h3></div>
+          <div className="form-grid">
+            <FileSlot label="Foto" previewUrl={photoFile ? URL.createObjectURL(photoFile) : resolveAssetUrl(existingPhotoUrl)} onSelect={setPhotoFile} />
+            <FileSlot label="TTD" previewUrl={signatureFile ? URL.createObjectURL(signatureFile) : resolveAssetUrl(existingSignatureUrl)} onSelect={setSignatureFile} />
+          </div>
         </div>
+
+        <CompetencySection value={competencies} onChange={setCompetencies} />
       </form>
+
+      {isEdit && (
+        <>
+          <EducationSection facilitatorId={facilitatorId} />
+          <TrainingSection
+            facilitatorId={facilitatorId}
+            title="Pendidikan/Pelatihan yang Terkait Materi"
+            category="related_training"
+            showRole={false}
+          />
+          <TrainingSection
+            facilitatorId={facilitatorId}
+            title="Pengalaman Melatih/Mengajar"
+            category="teaching_experience"
+            showRole={true}
+          />
+        </>
+      )}
+
+      {!isEdit && (
+        <div className="panel" style={{ marginBottom: 18 }}>
+          <p className="muted" style={{ fontSize: 12 }}>
+            Riwayat Pendidikan dan Pengalaman Mengajar/Pelatihan bisa ditambahkan setelah biodata ini disimpan
+            (kamu akan otomatis diarahkan ke halaman Edit-nya).
+          </p>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <button className="primary-button" type="submit" form="facilitator-form" disabled={submitting} style={{ marginTop: 0 }}>
+          {submitting ? (submitStep || 'Menyimpan...') : isEdit ? 'Simpan Perubahan' : 'Simpan Fasilitator'}
+        </button>
+        <button type="button" className="outline-button" onClick={() => onNavigate?.('fasilitator')} disabled={submitting}>
+          Batal
+        </button>
+      </div>
     </section>
   )
 }

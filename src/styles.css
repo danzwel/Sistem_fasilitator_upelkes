@@ -1096,3 +1096,32 @@ nav {
 .required-mark{color:#e6a8bd}
 .field-error{color:#e6a8bd;font-weight:500;font-size:11px}
 @media(max-width:760px){.form-grid{grid-template-columns:1fr}}
+
+.cv-page{background:#fff;color:#1a1a1a;max-width:800px;margin:0 auto;padding:48px 56px;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.35);font-family:'DM Sans',sans-serif;position:relative}
+.cv-photo-slot{position:absolute;top:48px;right:56px;width:110px;height:140px}
+.cv-photo-slot img{width:100%;height:100%;object-fit:cover;border:1px solid #ccc}
+.cv-photo-placeholder{width:100%;height:100%;border:1px dashed #999;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;color:#888;padding:6px}
+.cv-name{font-size:20px;font-weight:700;margin:0 140px 18px 0}
+.cv-bio-table{border-collapse:collapse;margin-bottom:26px;font-size:13px}
+.cv-bio-table td{padding:2px 0;vertical-align:top}
+.cv-bio-table td:first-child{width:150px;color:#333}
+.cv-section-title{font-size:14px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #333;padding-bottom:4px;margin:24px 0 10px}
+.cv-empty{font-size:12px;color:#888;font-style:italic}
+.cv-education-row{margin-bottom:10px;font-size:13px}
+.cv-education-line1{display:flex;justify-content:space-between;font-weight:600}
+.cv-education-line2{color:#333}
+.cv-list-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.cv-list-table th{text-align:left;border-bottom:1px solid #333;padding:4px 6px}
+.cv-list-table td{padding:5px 6px;border-bottom:1px solid #ddd}
+.cv-signature-block{margin-top:36px;text-align:right;font-size:13px}
+.cv-signature-img{width:110px;display:block;margin-left:auto;margin:8px 0}
+.cv-signature-placeholder{color:#999;font-size:11px;font-style:italic;margin:20px 0}
+.cv-signature-name{text-decoration:underline}
+
+@media print{
+  body *{visibility:hidden}
+  .cv-page,.cv-page *{visibility:visible}
+  .cv-page{position:absolute;top:0;left:0;box-shadow:none;border-radius:0;width:100%;max-width:100%;margin:0;padding:24px 40px}
+  .no-print{display:none !important}
+  .sidebar,.topbar{display:none !important}
+}
