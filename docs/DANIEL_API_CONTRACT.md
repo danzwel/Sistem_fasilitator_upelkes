@@ -1,34 +1,71 @@
 # Kontrak API — Monitoring dan Evaluasi
 
-Modul Daniel hanya memakai data dari master fasilitator/pelatihan milik Sofi.
+Modul Daniel memakai data master fasilitator dan riwayat pelatihan/kegiatan dari API ini.
 
-| Endpoint | Kegunaan |
-| --- | --- |
-| `GET /api/facilitators` | daftar master fasilitator |
-| `GET /api/facilitators/:id` | detail master fasilitator |
-| `GET /api/facilitators/monitoring?filter=` | tabel kelengkapan |
-| `GET /api/facilitators/search?query=&competency=&min_rating=&status=` | pencarian server-side |
-| `GET /api/facilitators/:id/competency-profile` | profil kompetensi |
-| `POST /api/facilitators/:id/reviews` | body: `{ authorName, rating: 1..5, comment }` |
-| `DELETE /api/facilitators/:id` | menghapus fasilitator beserta data terkait |
+## Fasilitator
 
-Endpoint monitoring mengembalikan `requirements[]` sebagai sumber kebenaran:
+| Method | Endpoint | Keterangan |
+| --- | --- | --- |
+| `GET` | `/api/facilitators` | daftar fasilitator |
+| `GET` | `/api/facilitators/:id` | detail fasilitator |
+| `POST` | `/api/facilitators` | membuat fasilitator |
+| `PUT` | `/api/facilitators/:id` | memperbarui fasilitator |
+| `DELETE` | `/api/facilitators/:id` | menghapus beserta data terkait |
+| `POST` | `/api/facilitators/:id/photo` | upload foto multipart/form-data |
+| `POST` | `/api/facilitators/:id/signature` | upload TTD multipart/form-data |
+
+Body create/update menggunakan JSON. Field khusus CV:
 
 ```json
-{ "key": "photo", "label": "Foto", "isComplete": true }
+{
+  "rank": "III/c",
+  "officeAddress": "Jl. Alamat Kantor",
+  "homeAddress": "Jl. Alamat Rumah",
+  "competencies": [
+    { "name": "Manajemen Pelatihan", "startedTeachingYear": 2018 }
+  ]
+}
 ```
 
-Frontend menghitung persentase berdasarkan daftar tersebut, sehingga indikator mengikuti field database tanpa data fasilitator duplikat.
+`competencies` adalah array objek. Ini menjadi sumber bagian “Materi yang Diajarkan” pada CV; `startedTeachingYear` boleh `null`. Array string lama tetap diterima untuk kompatibilitas dan disimpan sebagai objek dengan tahun `null`.
 
-## Backend lokal
+Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`.
 
-Jalankan pada dua terminal:
+## Monitoring, pencarian, profil, dan ulasan
 
-```bash
-npm run dev:api
-npm run dev
-```
+| Method | Endpoint | Keterangan |
+| --- | --- | --- |
+| `GET` | `/api/facilitators/monitoring?filter=` | tabel kelengkapan |
+| `GET` | `/api/facilitators/search?query=&competency=&min_rating=&status=` | pencarian server-side |
+| `GET` | `/api/facilitators/:id/competency-profile` | profil kompetensi lengkap |
+| `POST` | `/api/facilitators/:id/reviews` | body `{ authorName, rating: 1..5, comment }` |
 
-Database SQLite berada di `storage/upelkes.sqlite`; migration otomatis berjalan ketika API pertama kali dinyalakan. Endpoint master data yang digunakan frontend Sofi tersedia di `POST /api/facilitators` dan `PUT /api/facilitators/:id`.
+## Pelatihan / riwayat kegiatan
 
-Untuk keamanan deployment, isi `AUTH_SECRET` dan aktifkan `AUTH_REQUIRED=true`. Saat development, endpoint tulis terbuka agar frontend dapat diintegrasikan lebih dahulu.
+Tabel `trainings` dipakai untuk dua jenis data tersebut. `category=related_training` mengisi “Pendidikan/Pelatihan yang Terkait Materi”, sedangkan `category=teaching_experience` mengisi “Pengalaman Melatih/Mengajar”. `role` mengisi kolom Peran.
+
+| Method | Endpoint | Keterangan |
+| --- | --- | --- |
+| `GET` | `/api/facilitators/:id/trainings` | daftar riwayat |
+| `POST` | `/api/facilitators/:id/trainings` | body wajib `{ name, date: "YYYY" atau "YYYY-MM-DD" }` |
+| `PUT` | `/api/facilitators/:id/trainings/:trainingId` | memperbarui riwayat |
+| `DELETE` | `/api/facilitators/:id/trainings/:trainingId` | menghapus riwayat |
+
+Field opsional riwayat: `material`, `organizer`, `role`, `category`, `certificateUrl`, `notes`.
+
+Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body: `{ institution, degree, graduationYear }`.
+
+## Mapping langsung ke Template CV Narasumber
+
+| Bagian template | Field API |
+| --- | --- |
+| Nama, TTL, NIK, NIP, Pangkat/Gol., Jabatan, Unit Kerja | `name`, `birthInfo`, `nik`, `nip`, `rank`, `position`, `unit` |
+| Alamat Kantor, Alamat Rumah, No. HP, Email | `officeAddress`, `homeAddress`, `phone`, `email` |
+| Materi yang Diajarkan | `competencies[]` (`name`, `startedTeachingYear`) |
+| Pendidikan/Pelatihan yang Terkait Materi | `trainings[]` dengan `category=related_training` |
+| Pengalaman Melatih/Mengajar | `trainings[]` dengan `category=teaching_experience` dan `role` |
+| TTD | `signatureUrl` dari endpoint upload signature |
+
+Endpoint monitoring mengembalikan `requirements[]` sebagai sumber kebenaran. Database SQLite berada di `storage/upelkes.sqlite`; migration otomatis berjalan ketika API pertama kali dinyalakan.
+
+Untuk deployment, isi `AUTH_SECRET` dan aktifkan `AUTH_REQUIRED=true`. Saat development, endpoint tulis terbuka.
