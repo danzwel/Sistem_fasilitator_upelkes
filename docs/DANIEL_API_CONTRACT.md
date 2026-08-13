@@ -29,7 +29,7 @@ Body create/update menggunakan JSON. Field khusus CV:
 
 `competencies` adalah array objek. Ini menjadi sumber bagian “Materi yang Diajarkan” pada CV; `startedTeachingYear` boleh `null`. Array string lama tetap diterima untuk kompatibilitas dan disimpan sebagai objek dengan tahun `null`.
 
-Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`.
+Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`; file dapat diakses melalui host API, misalnya `http://localhost:8000/uploads/photo-....jpg`. Folder upload dipatok ke `<project>/storage/uploads` dan tidak bergantung pada folder tempat perintah `node server/index.js` dijalankan.
 
 ## Monitoring, pencarian, profil, dan ulasan
 
