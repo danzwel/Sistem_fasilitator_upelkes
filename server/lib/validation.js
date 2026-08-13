@@ -5,6 +5,20 @@ export function validateFacilitator(input) {
   if (input.email && !emailPattern.test(input.email)) errors.email = 'Email tidak valid.'
   if (input.phone && !/^[+\d][\d\s-]{7,}$/.test(input.phone)) errors.phone = 'Nomor HP tidak valid.'
   if (input.status && !['active', 'inactive'].includes(input.status)) errors.status = 'Status tidak valid.'
+  if (input.competencies && (!Array.isArray(input.competencies) || input.competencies.some((item) => (typeof item !== 'string' && !item?.name?.trim()) || (item?.startedTeachingYear != null && (!Number.isInteger(item.startedTeachingYear) || item.startedTeachingYear < 1900 || item.startedTeachingYear > new Date().getFullYear()))))) errors.competencies = 'Kompetensi harus berupa array nama atau objek { name, startedTeachingYear }.'
+  return errors
+}
+export function validateTraining(input) {
+  const errors = {}
+  if (!input.name?.trim()) errors.name = 'Nama pelatihan/kegiatan wajib diisi.'
+  if (!input.date || !/^\d{4}(-\d{2}-\d{2})?$/.test(input.date)) errors.date = 'Tanggal wajib berformat YYYY atau YYYY-MM-DD.'
+  if (input.category && !['related_training', 'teaching_experience'].includes(input.category)) errors.category = 'Kategori riwayat tidak valid.'
+  return errors
+}
+export function validateEducation(input) {
+  const errors = {}
+  if (!input.institution?.trim()) errors.institution = 'Institusi wajib diisi.'
+  if (input.graduationYear != null && (!Number.isInteger(input.graduationYear) || input.graduationYear < 1900 || input.graduationYear > new Date().getFullYear() + 10)) errors.graduationYear = 'Tahun lulus tidak valid.'
   return errors
 }
 export function validateReview(input) {

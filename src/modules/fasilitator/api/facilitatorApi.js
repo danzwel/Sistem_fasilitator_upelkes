@@ -7,15 +7,17 @@ function toApiPayload(fasilitator) {
     birthInfo: fasilitator.birthInfo ?? null,
     nik: fasilitator.nik ?? null,
     nip: fasilitator.nip ?? null,
+    rank: fasilitator.pangkatGolongan ?? fasilitator.rank ?? null,
     position: fasilitator.jabatan ?? fasilitator.position ?? null,
     unit: fasilitator.unitKerja ?? fasilitator.unit ?? null,
-    address: fasilitator.alamat ?? fasilitator.address ?? null,
+    officeAddress: fasilitator.alamatKantor ?? fasilitator.officeAddress ?? null,
+    homeAddress: fasilitator.alamatRumah ?? fasilitator.homeAddress ?? null,
     phone: fasilitator.noHp ?? fasilitator.phone ?? null,
     email: fasilitator.email ?? null,
     photoUrl: fasilitator.fotoUrl ?? fasilitator.photoUrl ?? null,
     signatureUrl: fasilitator.ttdUrl ?? fasilitator.signatureUrl ?? null,
     status: fasilitator.status ?? 'active',
-    competencies: fasilitator.kompetensi ?? fasilitator.competencies ?? [],
+    competencies: (fasilitator.kompetensi ?? fasilitator.competencies ?? []).map((item) => typeof item === 'string' ? item : { name: item.name, startedTeachingYear: item.startedTeachingYear ?? null }),
   }
 }
 
