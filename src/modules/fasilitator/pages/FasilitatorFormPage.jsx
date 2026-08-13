@@ -114,6 +114,12 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
       ...form,
       birthInfo: combineBirthInfo(form.tempatLahir, form.tanggalLahir),
       competencies,
+      // Sengaja ikut kirim URL foto/TTD yang lama, supaya kalau backend
+      // nganggep field yang nggak dikirim = dihapus, foto/TTD yang udah
+      // ada nggak ke-null-in cuma gara-gara kamu edit field lain / cuma
+      // ganti salah satu file doang.
+      photoUrl: existingPhotoUrl,
+      signatureUrl: existingSignatureUrl,
     }
 
     setSubmitting(true)
@@ -202,9 +208,9 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
             <FileSlot label="TTD" previewUrl={signatureFile ? URL.createObjectURL(signatureFile) : resolveAssetUrl(existingSignatureUrl)} onSelect={setSignatureFile} />
           </div>
         </div>
-
-        <CompetencySection value={competencies} onChange={setCompetencies} />
       </form>
+
+      <CompetencySection value={competencies} onChange={setCompetencies} />
 
       {isEdit && (
         <>
