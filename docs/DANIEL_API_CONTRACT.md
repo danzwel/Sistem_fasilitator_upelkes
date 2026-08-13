@@ -29,7 +29,7 @@ Body create/update menggunakan JSON. Field khusus CV:
 
 `competencies` adalah array objek. Ini menjadi sumber bagian “Materi yang Diajarkan” pada CV; `startedTeachingYear` boleh `null`. Array string lama tetap diterima untuk kompatibilitas dan disimpan sebagai objek dengan tahun `null`.
 
-Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`.
+Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`; file dapat diakses melalui host API, misalnya `http://localhost:8000/uploads/photo-....jpg`. Folder upload dipatok ke `<project>/storage/uploads` dan tidak bergantung pada folder tempat perintah `node server/index.js` dijalankan.
 
 ## Monitoring, pencarian, profil, dan ulasan
 
@@ -53,7 +53,18 @@ Tabel `trainings` dipakai untuk dua jenis data tersebut. `category=related_train
 
 Field opsional riwayat: `material`, `organizer`, `role`, `category`, `certificateUrl`, `notes`.
 
-Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body: `{ institution, degree, graduationYear }`.
+Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body utama:
+
+```json
+{
+  "institution": "Universitas Pendidikan Indonesia",
+  "degree": "S2 Administrasi Pendidikan",
+  "startDate": "2023-09",
+  "endDate": "2025-09"
+}
+```
+
+`startDate` dan `endDate` memakai format `YYYY-MM` agar CV dapat menampilkan bulan dan tahun masuk/lulus. `graduationYear` lama tetap diterima untuk kompatibilitas; jika `endDate` dikirim, tahun lulus juga disimpan otomatis dari tanggal tersebut.
 
 ## Mapping langsung ke Template CV Narasumber
 

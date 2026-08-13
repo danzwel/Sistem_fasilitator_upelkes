@@ -2,6 +2,8 @@ import { createServer } from 'node:http'
 import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { extname, join, normalize as normalizePath } from 'node:path'
+import { dirname, relative, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import './database/database.js'
 import { db } from './database/database.js'
 import { createToken, verifyToken } from './lib/auth.js'
@@ -16,7 +18,8 @@ const matches = (password, value) => { const [salt, stored] = value.split(':'); 
 const access = (request) => verifyToken(request.headers.authorization)
 const protect = (request, response) => { if (!required) return true; if (access(request)) return true; json(response, 401, { message: 'Autentikasi diperlukan.' }); return false }
 const invalid = (response, errors) => json(response, 422, { message: 'Validasi gagal.', errors })
-const uploadDirectory = join(process.cwd(), 'storage', 'uploads')
+const projectDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const uploadDirectory = resolve(process.env.UPLOAD_DIRECTORY || join(projectDirectory, 'storage', 'uploads'))
 mkdirSync(uploadDirectory, { recursive: true })
 async function readMultipart(request) { const chunks = []; for await (const chunk of request) chunks.push(chunk); const body = Buffer.concat(chunks); const boundary = request.headers['content-type']?.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[1] || request.headers['content-type']?.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[2]; if (!boundary) throw Object.assign(new Error('Boundary multipart tidak ditemukan.'), { status: 400 }); const marker = Buffer.from(`--${boundary}`); const result = {}; let cursor = body.indexOf(marker); while (cursor >= 0) { const start = cursor + marker.length + 2; const next = body.indexOf(marker, start); if (next < 0) break; const part = body.subarray(start, next - 2); const split = part.indexOf(Buffer.from('\r\n\r\n')); if (split < 0) { cursor = next; continue } const headers = part.subarray(0, split).toString(); const content = part.subarray(split + 4); const name = headers.match(/name="([^"]+)"/)?.[1]; const filename = headers.match(/filename="([^"]*)"/)?.[1]; if (name && filename) result[name] = { filename, content }; else if (name) result[name] = content.toString(); cursor = next } return result }
 function saveUpload(file, kind) { if (!file?.content?.length) throw Object.assign(new Error('File upload wajib diisi.'), { status: 422 }); const extension = extname(file.filename).toLowerCase() || (kind === 'photo' ? '.jpg' : '.png'); if (!['.jpg', '.jpeg', '.png', '.webp'].includes(extension)) throw Object.assign(new Error('Format file harus JPG, PNG, atau WEBP.'), { status: 422 }); const filename = `${kind}-${Date.now()}-${randomBytes(6).toString('hex')}${extension}`; writeFileSync(join(uploadDirectory, filename), file.content); return `/uploads/${filename}` }
@@ -58,7 +61,7 @@ const server = createServer(async (request, response) => {
     if (request.method === 'GET' && facilitatorId) { const data = facilitators.getFacilitator(Number(facilitatorId[0])); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     if (request.method === 'PUT' && facilitatorId) { if (!protect(request, response)) return; const input = await readJson(request); const errors = validateFacilitator({ ...input, name: input.name || 'existing' }); if (Object.keys(errors).length) return invalid(response, errors); const data = facilitators.updateFacilitator(Number(facilitatorId[0]), input); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
     if (request.method === 'DELETE' && facilitatorId) { if (!protect(request, response)) return; const data = facilitators.deleteFacilitator(Number(facilitatorId[0])); return data ? json(response, 200, { data }) : json(response, 404, { message: 'Fasilitator tidak ditemukan.' }) }
-    if (request.method === 'GET' && url.pathname.startsWith('/uploads/')) { const file = normalizePath(join(process.cwd(), url.pathname)); if (!file.startsWith(uploadDirectory) || !existsSync(file)) return json(response, 404, { message: 'File tidak ditemukan.' }); response.writeHead(200); return response.end(readFileSync(file)) }
+    if (request.method === 'GET' && url.pathname.startsWith('/uploads/')) { const requestedName = decodeURIComponent(url.pathname.slice('/uploads/'.length)); const file = normalizePath(resolve(uploadDirectory, requestedName)); const relativeFile = relative(uploadDirectory, file); if (!relativeFile || relativeFile.startsWith('..') || relativeFile.includes(`..${'\\'}`) || !existsSync(file)) return json(response, 404, { message: 'File tidak ditemukan.' }); const contentTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' }; response.writeHead(200, { 'Content-Type': contentTypes[extname(file).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'public, max-age=3600' }); return response.end(readFileSync(file)) }
     return json(response, 404, { message: 'Endpoint tidak ditemukan.' })
   } catch (error) { console.error(error); return json(response, error.status || 500, { message: error.message || 'Terjadi kesalahan server.' }) }
 })

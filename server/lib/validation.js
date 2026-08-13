@@ -19,6 +19,9 @@ export function validateEducation(input) {
   const errors = {}
   if (!input.institution?.trim()) errors.institution = 'Institusi wajib diisi.'
   if (input.graduationYear != null && (!Number.isInteger(input.graduationYear) || input.graduationYear < 1900 || input.graduationYear > new Date().getFullYear() + 10)) errors.graduationYear = 'Tahun lulus tidak valid.'
+  if (input.startDate != null && !/^\d{4}-(0[1-9]|1[0-2])$/.test(input.startDate)) errors.startDate = 'Tanggal mulai pendidikan harus berformat YYYY-MM.'
+  if (input.endDate != null && !/^\d{4}-(0[1-9]|1[0-2])$/.test(input.endDate)) errors.endDate = 'Tanggal selesai pendidikan harus berformat YYYY-MM.'
+  if (!errors.startDate && !errors.endDate && input.startDate && input.endDate && input.startDate > input.endDate) errors.endDate = 'Tanggal selesai tidak boleh sebelum tanggal mulai.'
   return errors
 }
 export function validateReview(input) {
