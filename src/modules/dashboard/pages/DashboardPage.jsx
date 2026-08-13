@@ -90,6 +90,8 @@ export function DashboardPage({ data, onNavigate }) {
         </div>
       </div>
 
+      <WelcomeTrainingBanner activities={data.upcomingActivities} />
+
       <section className="stats-grid">
         {data.stats.map(stat => (
           <article className={`stat-card ${stat.tone}`} key={stat.key}>
@@ -259,4 +261,82 @@ function EmptyState({ text }) {
       <small>Data akan tampil setelah terhubung ke database.</small>
     </div>
   )
+}
+
+function WelcomeTrainingBanner({ activities }) {
+  const today = new Date();
+  
+  // Try to find today's training.
+  const todayActivity = activities?.find(activity => {
+    if (activity.tanggal) {
+      const activityDate = new Date(activity.tanggal);
+      return activityDate.getDate() === today.getDate() &&
+             activityDate.getMonth() === today.getMonth() &&
+             activityDate.getFullYear() === today.getFullYear();
+    }
+    // Fallback if using old dummy format
+    const isSameDay = activity.day == today.getDate();
+    const isSameMonth = activity.month === monthNames[today.getMonth()] || activity.month === monthNames[today.getMonth()].substring(0, 3);
+    return isSameDay && isSameMonth;
+  });
+
+  if (!todayActivity) {
+    return (
+      <div className="training-banner empty-banner">
+        <div className="banner-content">
+          <h4>Tidak Ada Pelatihan Hari Ini</h4>
+          <p>Belum ada kegiatan pelatihan yang dijadwalkan untuk hari ini.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="training-banner active-banner">
+      <div className="banner-left">
+        <div className="banner-icon-bg">
+          <svg className="banner-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+      <div className="banner-middle">
+        <span className="banner-badge">HARI INI</span>
+        <h4>Ada Pelatihan Hari Ini! 🎯</h4>
+        <p>Jangan lewatkan kegiatan penting hari ini.</p>
+      </div>
+      <div className="banner-right">
+        <div className="info-grid">
+          <div className="info-item">
+            <span className="info-icon">📋</span>
+            <div>
+              <span className="info-label">Materi</span>
+              <span className="info-value">{todayActivity.materi || todayActivity.name || '-'}</span>
+            </div>
+          </div>
+          <div className="info-item">
+            <span className="info-icon">🧑‍🏫</span>
+            <div>
+              <span className="info-label">MOT</span>
+              <span className="info-value">{todayActivity.mot || todayActivity.facilitator || '-'}</span>
+            </div>
+          </div>
+          <div className="info-item">
+            <span className="info-icon">🧑‍💻</span>
+            <div>
+              <span className="info-label">Admin</span>
+              <span className="info-value">{todayActivity.admin || '-'}</span>
+            </div>
+          </div>
+          <div className="info-item">
+            <span className="info-icon">🚪</span>
+            <div>
+              <span className="info-label">Ruangan</span>
+              <span className="info-value">{todayActivity.ruangan || '-'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
