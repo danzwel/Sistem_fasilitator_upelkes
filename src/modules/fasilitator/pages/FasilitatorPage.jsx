@@ -57,9 +57,14 @@ export function FasilitatorPage({ onNavigate }) {
           <h2>Data Fasilitator</h2>
           <p className="muted">Kelola biodata, foto, TTD, dan kelengkapan data fasilitator UPELKES.</p>
         </div>
-        <button className="primary-button" onClick={() => onNavigate?.('fasilitator-tambah')}>
-          + Tambah Fasilitator
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="outline-button" onClick={() => onNavigate?.('fasilitator-import')}>
+            Import Excel
+          </button>
+          <button className="primary-button" onClick={() => onNavigate?.('fasilitator-tambah')}>
+            + Tambah Fasilitator
+          </button>
+        </div>
       </div>
 
       <div className="panel">

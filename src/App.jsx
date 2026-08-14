@@ -10,6 +10,9 @@ import { FasilitatorPage } from './modules/fasilitator/pages/FasilitatorPage'
 import { FasilitatorFormPage } from './modules/fasilitator/pages/FasilitatorFormPage'
 import { FasilitatorDetailPage } from './modules/fasilitator/pages/FasilitatorDetailPage'
 import { CvPreviewPage } from './modules/cv/pages/CvPreviewPage'
+import { PelatihanPage } from './modules/training/pages/PelatihanPage'
+import { ImportExcelPage } from './modules/fasilitator/pages/ImportExcelPage'
+
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
@@ -18,7 +21,8 @@ const pages = {
   'fasilitator-edit': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
   'fasilitator-detail': { label: 'Detail Fasilitator', component: FasilitatorDetailPage },
   'fasilitator-cv': { label: 'CV Fasilitator', component: CvPreviewPage },
-  pelatihan: { label: 'Pelatihan', component: PlaceholderPage, owner: 'Sofi' },
+  'fasilitator-import': { label: 'Import Excel', component: ImportExcelPage },
+  pelatihan: { label: 'Pelatihan', component: PelatihanPage },
   monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
   pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },
   kompetensi: { label: 'Profil Kompetensi', component: CompetencyProfilePage, owner: 'Daniel' },

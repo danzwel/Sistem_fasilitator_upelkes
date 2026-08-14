@@ -105,7 +105,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId }) {
           )}
         </div>
 
-        <h1 className="cv-name">{facilitator.name}{facilitator.degree ? `, ${facilitator.degree}` : ''}</h1>
+        <h1 className="cv-name">{facilitator.name}</h1>
 
         <table className="cv-bio-table">
           <tbody>
