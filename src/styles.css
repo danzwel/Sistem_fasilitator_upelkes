@@ -3,6 +3,14 @@
    ═══════════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&family=Cinzel:wght@600;700&display=swap');
+
+:root{
+  --font-sans-sofi: 'Jost', sans-serif;
+  --font-display-sofi: 'Cormorant Garamond', serif;
+  --font-serif-sofi: 'Cinzel', serif;
+}
 
 /* ── Custom Properties ─────────────────────────────────────── */
 :root {
@@ -1287,4 +1295,104 @@ nav {
   .cv-page{position:absolute;top:0;left:0;box-shadow:none;border-radius:0;width:100%;max-width:100%;margin:0;padding:24px 40px}
   .no-print{display:none !important}
   .sidebar,.topbar{display:none !important}
+}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,7,20,0.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;animation:fade-in 180ms ease-out}
+.modal-card{background:#241d34;border:1px solid #3e3451;border-radius:20px;padding:0;max-width:760px;width:100%;max-height:88vh;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.6);animation:modal-pop 200ms cubic-bezier(0.22,1,0.36,1);display:flex;flex-direction:column}
+.modal-card::before{content:'';display:block;height:5px;background:linear-gradient(90deg,#c96df8,#7048dc)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:24px 30px 18px}
+.modal-header h3{font:700 21px 'Space Grotesk',sans-serif;margin:0;letter-spacing:.01em}
+.modal-close{border:1px solid #5b4d6b;color:#b9aed0;background:#2c2440;border-radius:50%;width:34px;height:34px;font-size:13px;cursor:pointer;transition:background 150ms,border-color 150ms,transform 150ms;flex-shrink:0}
+.modal-close:hover{background:#3e2d55;border-color:#bf68f5;transform:rotate(90deg)}
+.modal-body{padding:6px 30px 28px;overflow-y:auto}
+.modal-footer{padding:18px 30px 26px;border-top:1px solid #34293f;display:flex;justify-content:flex-end}
+@keyframes modal-pop{from{opacity:0;transform:scale(0.94) translateY(10px)}to{opacity:1;transform:none}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(10,7,20,0.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;animation:fade-in 180ms ease-out}
+.modal-card{background:#241d34;border:1px solid #3e3451;border-radius:20px;padding:0;max-width:760px;width:100%;max-height:88vh;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.6);animation:modal-pop 200ms cubic-bezier(0.22,1,0.36,1);display:flex;flex-direction:column}
+.modal-card::before{content:'';display:block;height:5px;background:linear-gradient(90deg,#c96df8,#7048dc)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:24px 30px 18px}
+.modal-header h3{font:700 21px 'Space Grotesk',sans-serif;margin:0;letter-spacing:.01em}
+.modal-close{border:1px solid #5b4d6b;color:#b9aed0;background:#2c2440;border-radius:50%;width:34px;height:34px;font-size:13px;cursor:pointer;transition:background 150ms,border-color 150ms,transform 150ms;flex-shrink:0}
+.modal-close:hover{background:#3e2d55;border-color:#bf68f5;transform:rotate(90deg)}
+.modal-body{padding:6px 30px 28px;overflow-y:auto}
+.modal-footer{padding:18px 30px 26px;border-top:1px solid #34293f;display:flex;justify-content:flex-end}
+@keyframes modal-pop{from{opacity:0;transform:scale(0.94) translateY(10px)}to{opacity:1;transform:none}}
+
+.detail-layout{display:flex;gap:32px;align-items:flex-start}
+.detail-fields{flex:1;display:grid;gap:2px;min-width:0;background:#1c1628;border:1px solid #34293f;border-radius:14px;overflow:hidden}
+.detail-field{display:flex;align-items:center;gap:18px;padding:15px 18px;border-bottom:1px solid #2c2440}
+.detail-field:last-child{border-bottom:none}
+.detail-label{width:130px;flex-shrink:0;color:#a89bc9;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.detail-value{flex:1;color:#f7f4ff;font-size:15px;font-weight:500;line-height:1.4}
+.detail-value-lg{font-size:19px;font-weight:600;line-height:1.35}
+.detail-facilitator-card{flex-shrink:0;width:190px;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(160deg,#3a2e54,#241d34);border:1px solid #4d4066;border-radius:18px;padding:26px 16px}
+.detail-facilitator-photo{width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #bf68f5;box-shadow:0 8px 26px rgba(191,104,245,0.4)}
+.detail-facilitator-photo-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#c96df8,#7048dc);color:#fff;font:700 42px 'Space Grotesk',sans-serif}
+.detail-facilitator-name{margin-top:14px;font:700 15px 'Space Grotesk',sans-serif;color:#f7f4ff;line-height:1.3}
+.detail-facilitator-tag{margin-top:4px;font-size:10px;color:#d8aef6;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.detail-facilitator-actions{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px}
+.detail-contact-button{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:9px 10px;font-size:12px;font-weight:700;text-decoration:none;transition:transform 150ms,box-shadow 150ms}
+.detail-contact-button:hover{transform:translateY(-1px)}
+.detail-contact-button.wa{background:#25d366;color:#0b3d20;box-shadow:0 4px 14px rgba(37,211,102,0.3)}
+.detail-contact-button.email{background:#3e2d55;border:1px solid #7048dc;color:#e3d6fb}
+
+@media(max-width:640px){
+  .detail-layout{flex-direction:column-reverse;align-items:center}
+  .detail-facilitator-card{width:100%}
+}.detail-facilitator-card{flex-shrink:0;width:190px;display:flex;flex-direction:column;align-items:center;text-align:center;background:linear-gradient(160deg,#3a2e54,#241d34);border:1px solid #4d4066;border-radius:18px;padding:26px 16px}
+.detail-facilitator-photo{width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #bf68f5;box-shadow:0 8px 26px rgba(191,104,245,0.4)}
+.detail-facilitator-photo-placeholder{display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#c96df8,#7048dc);color:#fff;font:700 42px 'Space Grotesk',sans-serif}
+.detail-facilitator-name{margin-top:14px;font:700 15px 'Space Grotesk',sans-serif;color:#f7f4ff;line-height:1.3}
+.detail-facilitator-tag{margin-top:4px;font-size:10px;color:#d8aef6;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.detail-facilitator-actions{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:16px}
+.detail-contact-button{display:flex;align-items:center;justify-content:center;gap:6px;border-radius:10px;padding:9px 10px;font-size:12px;font-weight:700;text-decoration:none;transition:transform 150ms,box-shadow 150ms}
+.detail-contact-button:hover{transform:translateY(-1px)}
+.detail-contact-button.wa{background:#25d366;color:#0b3d20;box-shadow:0 4px 14px rgba(37,211,102,0.3)}
+.detail-contact-button.email{background:#3e2d55;border:1px solid #7048dc;color:#e3d6fb}
+
+@media(max-width:640px){
+  .detail-layout{flex-direction:column-reverse;align-items:center}
+  .detail-facilitator-card{width:100%}
+}
+
+sofi-font-override.css
+
+
+:root{
+  --font-sans-sofi: 'Jost', sans-serif;
+  --font-display-sofi: 'Cormorant Garamond', serif;
+}
+
+/* Modul Sofi (Fasilitator & Pelatihan) — body pakai Jost, heading pakai
+   Cormorant Garamond. Dashboard/Raihan menyusul disesuaikan olehnya. */
+.data-table,.table-primary,.table-secondary,.status-badge,.form-field,
+.form-field input,.detail-label,.detail-value,.detail-facilitator-name,
+.detail-facilitator-tag,.detail-contact-button,.cv-page,.cv-bio-table,
+.cv-list-table,.modal-body,.empty-state,.muted{
+  font-family:var(--font-sans-sofi);
+}
+.panel h3,.welcome-row h2,.modal-header h3,.detail-value-lg,
+.cv-name,.cv-section-title{
+  font-family:var(--font-display-sofi) !important;
+  font-weight:600;
+}
+
+/* Modul Sofi (Fasilitator & Pelatihan) — body pakai Jost, heading pakai
+   Cormorant Garamond, judul spesial (nama di CV) pakai Cinzel. */
+.data-table,.table-primary,.table-secondary,.status-badge,.form-field,
+.form-field input,.detail-label,.detail-value,.detail-facilitator-name,
+.detail-facilitator-tag,.detail-contact-button,.cv-page,.cv-bio-table,
+.cv-list-table,.modal-body,.empty-state,.muted{
+  font-family:var(--font-sans-sofi) !important;
+}
+.panel h3,.welcome-row h2,.modal-header h3,.detail-value-lg,
+.cv-section-title{
+  font-family:var(--font-display-sofi) !important;
+  font-weight:600;
+}
+.cv-name{
+  font-family:var(--font-serif-sofi) !important;
+  font-weight:700;
+  letter-spacing:.01em;
 }

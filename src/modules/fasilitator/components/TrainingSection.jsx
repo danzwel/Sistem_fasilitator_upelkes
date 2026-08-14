@@ -132,8 +132,8 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
               <input type="text" value={form.organizer} onChange={(e) => setForm((p) => ({ ...p, organizer: e.target.value }))} />
             </label>
             <label className="form-field">
-              <span>Tahun</span>
-              <input type="text" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} placeholder="2023" />
+              <span>Tanggal</span>
+              <input type="date" value={form.date} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
             </label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
