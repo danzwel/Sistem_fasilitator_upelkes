@@ -11,10 +11,14 @@ const CATEGORY_LABEL = {
 
 const EMPTY_FORM = { facilitatorId: '', name: '', category: 'teaching_experience', role: '', organizer: '', date: '' }
 
-function yearOnly(dateValue) {
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
+function formatBulanTahun(dateValue) {
   if (!dateValue) return '-'
-  const match = String(dateValue).match(/^\d{4}/)
-  return match ? match[0] : dateValue
+  const match = String(dateValue).match(/^(\d{4})-(\d{2})/)
+  if (!match) return dateValue
+  const monthName = MONTH_NAMES[Number(match[2]) - 1]
+  return monthName ? `${monthName} ${match[1]}` : dateValue
 }
 
 function rowKey(r) {
@@ -285,7 +289,7 @@ export function PelatihanPage({ onNavigate }) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nama Kegiatan</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Tahun</th><th aria-label="Aksi"></th>
+                <th>Nama Kegiatan</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Bulan/Tahun</th><th aria-label="Aksi"></th>
               </tr>
             </thead>
             <tbody>
@@ -300,7 +304,7 @@ export function PelatihanPage({ onNavigate }) {
                   <td><div className="table-secondary">{r.facilitatorName}</div></td>
                   <td><div className="table-secondary">{r.role || '-'}</div></td>
                   <td><div className="table-secondary">{r.organizer || '-'}</div></td>
-                  <td><div className="table-secondary">{yearOnly(r.date)}</div></td>
+                  <td><div className="table-secondary">{formatBulanTahun(r.date)}</div></td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                       <button className="text-button" onClick={() => openDetail(r)}>Detail</button>
