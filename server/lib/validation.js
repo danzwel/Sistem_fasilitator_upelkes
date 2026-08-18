@@ -12,6 +12,8 @@ export function validateTraining(input) {
   const errors = {}
   if (!input.name?.trim()) errors.name = 'Nama pelatihan/kegiatan wajib diisi.'
   if (!input.date || !/^\d{4}(-\d{2}-\d{2})?$/.test(input.date)) errors.date = 'Tanggal wajib berformat YYYY atau YYYY-MM-DD.'
+  if (input.material != null && typeof input.material !== 'string') errors.material = 'Materi harus berupa teks.'
+  if (input.subject != null && typeof input.subject !== 'string') errors.subject = 'Subject harus berupa teks.'
   if (input.category && !['related_training', 'teaching_experience'].includes(input.category)) errors.category = 'Kategori riwayat tidak valid.'
   return errors
 }

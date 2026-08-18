@@ -5,7 +5,7 @@ import { getTrainings, createTraining, updateTraining, deleteTraining } from '..
 // category: 'related_training' | 'teaching_experience'
 // showRole: true untuk "Pengalaman Melatih/Mengajar" (ada kolom Peran)
 
-const emptyForm = { name: '', date: '', organizer: '', role: '' }
+const emptyForm = { name: '', material: '', date: '', organizer: '', role: '' }
 
 export function TrainingSection({ facilitatorId, title, category, showRole }) {
   const [items, setItems] = useState([])
@@ -43,6 +43,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
     setEditingId(item.id)
     setForm({
       name: item.name ?? '',
+      material: item.material ?? item.subject ?? '',
       date: item.date ?? '',
       organizer: item.organizer ?? '',
       role: item.role ?? '',
@@ -66,6 +67,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
     }
     const payload = {
       name: form.name.trim(),
+      material: form.material.trim(),
       date: form.date.trim(),
       organizer: form.organizer.trim(),
       category,
@@ -121,6 +123,10 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
               <span>Nama {showRole ? 'Pelatihan/Kegiatan' : 'Pendidikan/Pelatihan'} <span className="required-mark">*</span></span>
               <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </label>
+            <label className="form-field">
+              <span>Mata Pelatihan / Materi</span>
+              <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+            </label>
             {showRole && (
               <label className="form-field">
                 <span>Peran</span>
@@ -158,7 +164,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{item.name}</div>
                 <div className="table-secondary">
-                  {[showRole ? item.role : null, item.organizer, item.date].filter(Boolean).join(' · ')}
+                  {[item.material ?? item.subject, showRole ? item.role : null, item.organizer, item.date].filter(Boolean).join(' · ')}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
