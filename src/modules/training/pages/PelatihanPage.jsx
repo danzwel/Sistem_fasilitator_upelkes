@@ -9,7 +9,7 @@ const CATEGORY_LABEL = {
   teaching_experience: 'Pengalaman Mengajar',
 }
 
-const EMPTY_FORM = { facilitatorId: '', name: '', category: 'teaching_experience', role: '', organizer: '', date: '' }
+const EMPTY_FORM = { facilitatorId: '', name: '', material: '', category: 'teaching_experience', role: '', organizer: '', date: '' }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
@@ -93,7 +93,7 @@ export function PelatihanPage({ onNavigate }) {
     const q = query.trim().toLowerCase()
     if (q) {
       list = list.filter((r) =>
-        [r.name, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
+        [r.name, r.material, r.subject, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
       )
     }
     return list.sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
@@ -121,6 +121,7 @@ export function PelatihanPage({ onNavigate }) {
     try {
       const payload = {
         name: form.name.trim(),
+        material: form.material.trim(),
         date: form.date || '',
         organizer: form.organizer.trim(),
         category: form.category,
@@ -145,6 +146,7 @@ export function PelatihanPage({ onNavigate }) {
     setEditForm({
       facilitatorId: r.facilitatorId,
       name: r.name ?? '',
+      material: r.material ?? r.subject ?? '',
       category: r.category ?? 'teaching_experience',
       role: r.role ?? '',
       organizer: r.organizer ?? '',
@@ -168,6 +170,7 @@ export function PelatihanPage({ onNavigate }) {
     try {
       const payload = {
         name: editForm.name.trim(),
+        material: editForm.material.trim(),
         date: editForm.date || '',
         organizer: editForm.organizer.trim(),
         category: editForm.category,
@@ -237,6 +240,10 @@ export function PelatihanPage({ onNavigate }) {
                 <span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span>
                 <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               </label>
+              <label className="form-field">
+                <span>Mata Pelatihan / Materi</span>
+                <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+              </label>
               {form.category === 'teaching_experience' && (
                 <label className="form-field">
                   <span>Peran</span>
@@ -289,13 +296,14 @@ export function PelatihanPage({ onNavigate }) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nama Kegiatan</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Bulan/Tahun</th><th aria-label="Aksi"></th>
+                <th>Nama Kegiatan</th><th>Materi</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Bulan/Tahun</th><th aria-label="Aksi"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={rowKey(r)}>
                   <td><div className="table-primary">{r.name}</div></td>
+                  <td><div className="table-secondary">{r.material || r.subject || '-'}</div></td>
                   <td>
                     <span className={`status-badge ${r.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                       {CATEGORY_LABEL[r.category] ?? r.category}
@@ -334,6 +342,10 @@ export function PelatihanPage({ onNavigate }) {
                 <span className={`status-badge ${detailRow.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                   {CATEGORY_LABEL[detailRow.category] ?? detailRow.category}
                 </span>
+              </div>
+              <div className="detail-field">
+                <div className="detail-label">Mata Pelatihan / Materi</div>
+                <div className="detail-value">{detailRow.material || detailRow.subject || '-'}</div>
               </div>
               {detailRow.role && (
                 <div className="detail-field">
@@ -404,6 +416,10 @@ export function PelatihanPage({ onNavigate }) {
               <label className="form-field">
                 <span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span>
                 <input type="text" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
+              </label>
+              <label className="form-field">
+                <span>Mata Pelatihan / Materi</span>
+                <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
               </label>
               {editForm.category === 'teaching_experience' && (
                 <label className="form-field">

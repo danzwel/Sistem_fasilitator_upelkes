@@ -51,7 +51,7 @@ Tabel `trainings` dipakai untuk dua jenis data tersebut. `category=related_train
 | `PUT` | `/api/facilitators/:id/trainings/:trainingId` | memperbarui riwayat |
 | `DELETE` | `/api/facilitators/:id/trainings/:trainingId` | menghapus riwayat |
 
-Field opsional riwayat: `material`, `organizer`, `role`, `category`, `certificateUrl`, `notes`.
+Field opsional riwayat: `material` (Mata Pelatihan/Materi), `organizer`, `role`, `category`, `certificateUrl`, `notes`. `subject` juga diterima sebagai alias input `material` untuk kompatibilitas. Response mengembalikan `material` dan `subject` dengan nilai yang sama. Satu `name` dapat memiliki beberapa record dengan materi berbeda.
 
 Riwayat pendidikan juga tersedia melalui `GET/POST /api/facilitators/:id/educations`, `PUT/DELETE /api/facilitators/:id/educations/:educationId`. Body utama:
 
