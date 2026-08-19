@@ -205,13 +205,19 @@ export function PelatihanPage({ onNavigate }) {
 
   return (
     <section className="page-enter">
-      <div className="welcome-row">
-        <div>
+      <div className="pelatihan-banner">
+        <div className="pelatihan-banner-decor">✦</div>
+        <div className="pelatihan-banner-content">
           <p className="eyebrow">MODUL SOFI</p>
           <h2>Pelatihan / Riwayat Kegiatan</h2>
           <p className="muted">Rekap gabungan dari semua fasilitator.</p>
         </div>
-        {!formOpen && <button className="primary-button" onClick={openAddForm}>+ Tambah Pelatihan</button>}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="outline-button" onClick={() => onNavigate?.('pelatihan-import')}>
+            Import Excel
+          </button>
+          {!formOpen && <button className="primary-button" onClick={openAddForm}>+ Tambah Pelatihan</button>}
+        </div>
       </div>
 
       {formOpen && (
