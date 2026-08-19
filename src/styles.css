@@ -1497,3 +1497,31 @@ sofi-font-override.css
   .pelatihan-banner{flex-direction:column;align-items:flex-start}
   .pelatihan-banner-decor{display:none}
 }
+
+.module-banner{
+  position:relative;
+  display:flex;
+  align-items:center;
+  background:
+    linear-gradient(135deg, rgba(36,26,54,0.45) 0%, rgba(30,22,46,0.55) 60%, rgba(36,26,54,0.5) 100%),
+    url('/banner3.jpg') center/cover no-repeat;
+  border:1px solid #4d4066;
+  border-radius:20px;
+  padding:20px 32px;
+  margin-bottom:24px;
+  overflow:hidden;
+  box-shadow:0 16px 40px rgba(15,11,24,0.5);
+}
+.module-banner-content{position:relative;z-index:1}
+.module-banner-content h2{
+  font:600 30px 'Cormorant Garamond',serif;
+  margin:0 0 8px;
+  text-shadow:0 2px 12px rgba(0,0,0,0.6);
+}
+.module-banner-content .eyebrow{text-shadow:0 1px 6px rgba(0,0,0,0.6)}
+.module-banner-content .muted,.module-banner-content p:not(.eyebrow){
+  margin:0;
+  text-shadow:0 1px 8px rgba(0,0,0,0.5);
+  color:#c9bfe0;
+  font-size:14px;
+}
