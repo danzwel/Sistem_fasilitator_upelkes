@@ -11,12 +11,26 @@ async function uploadFile(path, file) {
   const formData = new FormData()
   formData.append('file', file)
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    body: formData,
-    // Sengaja TIDAK set Content-Type — browser otomatis set multipart
-    // boundary yang benar. Kalau di-set manual malah rusak requestnya.
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 detik
+
+  let response
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+      // Sengaja TIDAK set Content-Type — browser otomatis set multipart
+      // boundary yang benar. Kalau di-set manual malah rusak requestnya.
+    })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Upload terlalu lama (lebih dari 20 detik), kemungkinan koneksi ke server terputus. Coba lagi.')
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   const body = await response.json().catch(() => ({}))
   if (!response.ok) {

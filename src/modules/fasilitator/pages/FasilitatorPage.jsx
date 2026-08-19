@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getFacilitators, deleteFacilitator } from '../api/facilitatorApi'
+import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { FacilitatorDetailModal } from '../components/FacilitatorDetailModal'
 
 export function FasilitatorPage({ onNavigate }) {
   const [facilitators, setFacilitators] = useState([])
@@ -7,6 +9,7 @@ export function FasilitatorPage({ onNavigate }) {
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
   const [deletingId, setDeletingId] = useState(null)
+  const [detailId, setDetailId] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -51,8 +54,8 @@ export function FasilitatorPage({ onNavigate }) {
 
   return (
     <section className="page-enter">
-      <div className="welcome-row">
-        <div>
+      <div className="fasilitator-banner">
+        <div className="fasilitator-banner-content">
           <p className="eyebrow">MODUL SOFI</p>
           <h2>Data Fasilitator</h2>
           <p className="muted">Kelola biodata, foto, TTD, dan kelengkapan data fasilitator UPELKES.</p>
@@ -105,6 +108,7 @@ export function FasilitatorPage({ onNavigate }) {
           <table className="data-table">
             <thead>
               <tr>
+                <th aria-label="Foto"></th>
                 <th>Nama</th>
                 <th>Jabatan / Unit Kerja</th>
                 <th>Kontak</th>
@@ -115,6 +119,26 @@ export function FasilitatorPage({ onNavigate }) {
             <tbody>
               {filtered.map((f) => (
                 <tr key={f.id}>
+                  <td style={{ width: 48 }}>
+                    {f.photoUrl ? (
+                      <img
+                        src={resolveAssetUrl(f.photoUrl)}
+                        alt={f.name}
+                        style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '1px solid #3e3451' }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: 38, height: 38, borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#c96df8,#7048dc)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 14,
+                        }}
+                      >
+                        {(f.name || '?').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <div className="table-primary">{f.name || '-'}</div>
                     {f.degree && <div className="table-secondary">{f.degree}</div>}
@@ -134,7 +158,7 @@ export function FasilitatorPage({ onNavigate }) {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                      <button className="text-button" onClick={() => onNavigate?.('fasilitator-detail', f.id)}>
+                      <button className="text-button" onClick={() => setDetailId(f.id)}>
                         Detail
                       </button>
                       <button className="text-button" onClick={() => onNavigate?.('fasilitator-edit', f.id)}>
@@ -156,6 +180,8 @@ export function FasilitatorPage({ onNavigate }) {
           </table>
         )}
       </div>
+
+      <FacilitatorDetailModal facilitatorId={detailId} onClose={() => setDetailId(null)} onNavigate={onNavigate} />
     </section>
   )
 }

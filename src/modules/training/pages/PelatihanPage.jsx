@@ -11,10 +11,14 @@ const CATEGORY_LABEL = {
 
 const EMPTY_FORM = { facilitatorId: '', name: '', material: '', category: 'teaching_experience', role: '', organizer: '', date: '' }
 
-function yearOnly(dateValue) {
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+
+function formatBulanTahun(dateValue) {
   if (!dateValue) return '-'
-  const match = String(dateValue).match(/^\d{4}/)
-  return match ? match[0] : dateValue
+  const match = String(dateValue).match(/^(\d{4})-(\d{2})/)
+  if (!match) return dateValue
+  const monthName = MONTH_NAMES[Number(match[2]) - 1]
+  return monthName ? `${monthName} ${match[1]}` : dateValue
 }
 
 function rowKey(r) {
@@ -89,7 +93,7 @@ export function PelatihanPage({ onNavigate }) {
     const q = query.trim().toLowerCase()
     if (q) {
       list = list.filter((r) =>
-        [r.name, r.material, r.subject, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
+        [r.name, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
       )
     }
     return list.sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
@@ -142,7 +146,7 @@ export function PelatihanPage({ onNavigate }) {
     setEditForm({
       facilitatorId: r.facilitatorId,
       name: r.name ?? '',
-      material: r.material ?? r.subject ?? '',
+      material: r.material ?? '',
       category: r.category ?? 'teaching_experience',
       role: r.role ?? '',
       organizer: r.organizer ?? '',
@@ -201,13 +205,19 @@ export function PelatihanPage({ onNavigate }) {
 
   return (
     <section className="page-enter">
-      <div className="welcome-row">
-        <div>
+      <div className="pelatihan-banner">
+        <div className="pelatihan-banner-decor">✦</div>
+        <div className="pelatihan-banner-content">
           <p className="eyebrow">MODUL SOFI</p>
           <h2>Pelatihan / Riwayat Kegiatan</h2>
           <p className="muted">Rekap gabungan dari semua fasilitator.</p>
         </div>
-        {!formOpen && <button className="primary-button" onClick={openAddForm}>+ Tambah Pelatihan</button>}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="outline-button" onClick={() => onNavigate?.('pelatihan-import')}>
+            Import Excel
+          </button>
+          {!formOpen && <button className="primary-button" onClick={openAddForm}>+ Tambah Pelatihan</button>}
+        </div>
       </div>
 
       {formOpen && (
@@ -237,8 +247,8 @@ export function PelatihanPage({ onNavigate }) {
                 <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               </label>
               <label className="form-field">
-                <span>Mata Pelatihan / Materi</span>
-                <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+                <span>Materi / Mata Pelatihan</span>
+                <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
               </label>
               {form.category === 'teaching_experience' && (
                 <label className="form-field">
@@ -292,14 +302,14 @@ export function PelatihanPage({ onNavigate }) {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Nama Kegiatan</th><th>Mata Pelatihan / Materi</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Tahun</th><th aria-label="Aksi"></th>
+                <th>Nama Kegiatan</th><th>Materi</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Bulan/Tahun</th><th aria-label="Aksi"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={rowKey(r)}>
                   <td><div className="table-primary">{r.name}</div></td>
-                  <td><div className="table-secondary">{r.material || r.subject || '-'}</div></td>
+                  <td><div className="table-secondary">{r.material || '-'}</div></td>
                   <td>
                     <span className={`status-badge ${r.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                       {CATEGORY_LABEL[r.category] ?? r.category}
@@ -308,7 +318,7 @@ export function PelatihanPage({ onNavigate }) {
                   <td><div className="table-secondary">{r.facilitatorName}</div></td>
                   <td><div className="table-secondary">{r.role || '-'}</div></td>
                   <td><div className="table-secondary">{r.organizer || '-'}</div></td>
-                  <td><div className="table-secondary">{yearOnly(r.date)}</div></td>
+                  <td><div className="table-secondary">{formatBulanTahun(r.date)}</div></td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                       <button className="text-button" onClick={() => openDetail(r)}>Detail</button>
@@ -333,15 +343,17 @@ export function PelatihanPage({ onNavigate }) {
                 <div className="detail-label">Nama Kegiatan</div>
                 <div className="detail-value detail-value-lg">{detailRow.name}</div>
               </div>
+              {detailRow.material && (
+                <div className="detail-field">
+                  <div className="detail-label">Materi</div>
+                  <div className="detail-value">{detailRow.material}</div>
+                </div>
+              )}
               <div className="detail-field">
                 <div className="detail-label">Kategori</div>
                 <span className={`status-badge ${detailRow.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                   {CATEGORY_LABEL[detailRow.category] ?? detailRow.category}
                 </span>
-              </div>
-              <div className="detail-field">
-                <div className="detail-label">Mata Pelatihan / Materi</div>
-                <div className="detail-value">{detailRow.material || detailRow.subject || '-'}</div>
               </div>
               {detailRow.role && (
                 <div className="detail-field">
@@ -414,8 +426,8 @@ export function PelatihanPage({ onNavigate }) {
                 <input type="text" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
               </label>
               <label className="form-field">
-                <span>Mata Pelatihan / Materi</span>
-                <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+                <span>Materi / Mata Pelatihan</span>
+                <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} />
               </label>
               {editForm.category === 'teaching_experience' && (
                 <label className="form-field">

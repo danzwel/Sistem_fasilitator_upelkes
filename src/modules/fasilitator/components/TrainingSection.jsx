@@ -43,7 +43,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
     setEditingId(item.id)
     setForm({
       name: item.name ?? '',
-      material: item.material ?? item.subject ?? '',
+      material: item.material ?? '',
       date: item.date ?? '',
       organizer: item.organizer ?? '',
       role: item.role ?? '',
@@ -124,8 +124,8 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
               <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </label>
             <label className="form-field">
-              <span>Mata Pelatihan / Materi</span>
-              <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+              <span>Materi / Mata Pelatihan</span>
+              <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
             </label>
             {showRole && (
               <label className="form-field">
@@ -163,8 +163,9 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
             <div key={item.id} className="activity-row" style={{ alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{item.name}</div>
+                {item.material && <div className="table-secondary" style={{ fontStyle: 'italic' }}>{item.material}</div>}
                 <div className="table-secondary">
-                  {[item.material ?? item.subject, showRole ? item.role : null, item.organizer, item.date].filter(Boolean).join(' · ')}
+                  {[showRole ? item.role : null, item.organizer, item.date].filter(Boolean).join(' · ')}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>

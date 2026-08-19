@@ -1396,3 +1396,104 @@ sofi-font-override.css
   font-weight:700;
   letter-spacing:.01em;
 }
+
+.detail-summary-row{display:flex;gap:12px;margin-top:20px}
+.detail-summary-chip{flex:1;background:#1c1628;border:1px solid #34293f;border-radius:12px;padding:14px;text-align:center}
+.detail-summary-chip strong{display:block;font:700 22px 'Space Grotesk',sans-serif;color:#d8aef6}
+.detail-summary-chip span{font-size:11px;color:#a49bbd;text-transform:uppercase;letter-spacing:.04em}
+
+.fasilitator-banner{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  background:
+    linear-gradient(135deg, rgba(36,26,54,0.45) 0%, rgba(30,22,46,0.55) 60%, rgba(36,26,54,0.5) 100%),
+    url('/banner.jpg') center/cover no-repeat;
+  border:1px solid #4d4066;
+  border-radius:20px;
+  padding:20px 32px;
+  margin-bottom:24px;
+  overflow:hidden;
+  box-shadow:0 16px 40px rgba(15,11,24,0.5);
+  min-height:0;
+}
+.fasilitator-banner-content{position:relative;z-index:1}
+.fasilitator-banner-content h2{
+  font:600 30px 'Cormorant Garamond',serif;
+  margin:0 0 8px;
+  text-shadow:0 2px 12px rgba(0,0,0,0.6);
+}
+.fasilitator-banner-content .eyebrow{text-shadow:0 1px 6px rgba(0,0,0,0.6)}
+.fasilitator-banner-content .muted{margin-bottom:14px;text-shadow:0 1px 8px rgba(0,0,0,0.5)}
+.fasilitator-banner-stat{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(191,104,245,0.12);
+  border:1px solid rgba(191,104,245,0.3);
+  border-radius:30px;
+  padding:6px 16px 6px 6px;
+}
+.fasilitator-banner-stat strong{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:26px;height:26px;
+  background:linear-gradient(135deg,#c96df8,#7048dc);
+  color:#fff;
+  border-radius:50%;
+  font:700 12px 'Space Grotesk',sans-serif;
+}
+.fasilitator-banner-stat span{font-size:12px;color:#d8aef6;font-weight:600}
+
+@media(max-width:760px){
+  .fasilitator-banner{flex-direction:column;align-items:flex-start}
+  .fasilitator-banner-decor{display:none}
+}
+
+/* Samain font topbar (UPTD UPELKES JAWA BARAT / Ruang Kerja Admin) sama
+   font modul Sofi yang baru (Jost + Cormorant Garamond) */
+.topbar .eyebrow{font-family:'Jost',sans-serif !important}
+.topbar h1{font-family:'Cormorant Garamond',serif !important;font-weight:600}
+
+.pelatihan-banner{
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  background:
+    linear-gradient(135deg, rgba(36,26,54,0.45) 0%, rgba(30,22,46,0.55) 60%, rgba(36,26,54,0.5) 100%),
+    url('/banner2.jpg') center/cover no-repeat;
+  border:1px solid #4d4066;
+  border-radius:20px;
+  padding:20px 32px;
+  margin-bottom:24px;
+  overflow:hidden;
+  box-shadow:0 16px 40px rgba(15,11,24,0.5);
+}
+.pelatihan-banner-decor{
+  position:absolute;
+  top:-30px;
+  right:40px;
+  font-size:160px;
+  color:rgba(191,104,245,0.08);
+  line-height:1;
+  pointer-events:none;
+  user-select:none;
+}
+.pelatihan-banner-content{position:relative;z-index:1}
+.pelatihan-banner-content h2{
+  font:600 30px 'Cormorant Garamond',serif;
+  margin:0 0 8px;
+  text-shadow:0 2px 12px rgba(0,0,0,0.6);
+}
+.pelatihan-banner-content .eyebrow{text-shadow:0 1px 6px rgba(0,0,0,0.6)}
+.pelatihan-banner-content .muted{margin:0;text-shadow:0 1px 8px rgba(0,0,0,0.5)}
+
+@media(max-width:760px){
+  .pelatihan-banner{flex-direction:column;align-items:flex-start}
+  .pelatihan-banner-decor{display:none}
+}
