@@ -93,7 +93,7 @@ export function PelatihanPage({ onNavigate }) {
     const q = query.trim().toLowerCase()
     if (q) {
       list = list.filter((r) =>
-        [r.name, r.material, r.subject, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
+        [r.name, r.facilitatorName, r.organizer, r.role].filter(Boolean).some((f) => String(f).toLowerCase().includes(q))
       )
     }
     return list.sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
@@ -146,7 +146,7 @@ export function PelatihanPage({ onNavigate }) {
     setEditForm({
       facilitatorId: r.facilitatorId,
       name: r.name ?? '',
-      material: r.material ?? r.subject ?? '',
+      material: r.material ?? '',
       category: r.category ?? 'teaching_experience',
       role: r.role ?? '',
       organizer: r.organizer ?? '',
@@ -241,8 +241,8 @@ export function PelatihanPage({ onNavigate }) {
                 <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               </label>
               <label className="form-field">
-                <span>Mata Pelatihan / Materi</span>
-                <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+                <span>Materi / Mata Pelatihan</span>
+                <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
               </label>
               {form.category === 'teaching_experience' && (
                 <label className="form-field">
@@ -303,7 +303,7 @@ export function PelatihanPage({ onNavigate }) {
               {filtered.map((r) => (
                 <tr key={rowKey(r)}>
                   <td><div className="table-primary">{r.name}</div></td>
-                  <td><div className="table-secondary">{r.material || r.subject || '-'}</div></td>
+                  <td><div className="table-secondary">{r.material || '-'}</div></td>
                   <td>
                     <span className={`status-badge ${r.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                       {CATEGORY_LABEL[r.category] ?? r.category}
@@ -337,15 +337,17 @@ export function PelatihanPage({ onNavigate }) {
                 <div className="detail-label">Nama Kegiatan</div>
                 <div className="detail-value detail-value-lg">{detailRow.name}</div>
               </div>
+              {detailRow.material && (
+                <div className="detail-field">
+                  <div className="detail-label">Materi</div>
+                  <div className="detail-value">{detailRow.material}</div>
+                </div>
+              )}
               <div className="detail-field">
                 <div className="detail-label">Kategori</div>
                 <span className={`status-badge ${detailRow.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
                   {CATEGORY_LABEL[detailRow.category] ?? detailRow.category}
                 </span>
-              </div>
-              <div className="detail-field">
-                <div className="detail-label">Mata Pelatihan / Materi</div>
-                <div className="detail-value">{detailRow.material || detailRow.subject || '-'}</div>
               </div>
               {detailRow.role && (
                 <div className="detail-field">
@@ -418,8 +420,8 @@ export function PelatihanPage({ onNavigate }) {
                 <input type="text" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
               </label>
               <label className="form-field">
-                <span>Mata Pelatihan / Materi</span>
-                <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} placeholder="Contoh: Pengelolaan Posyandu" />
+                <span>Materi / Mata Pelatihan</span>
+                <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} />
               </label>
               {editForm.category === 'teaching_experience' && (
                 <label className="form-field">

@@ -42,6 +42,7 @@ export default function App() {
   return (
     <AppShell activePage={activePage} onNavigate={handleNavigate}>
       <Page
+        key={`${activePage}-${selectedFacilitatorId ?? 'new'}`}
         data={dashboardData}
         title={page.label}
         owner={page.owner}
