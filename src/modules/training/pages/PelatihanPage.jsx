@@ -70,9 +70,13 @@ export function PelatihanPage({ onNavigate }) {
               ...t,
               facilitatorId: f.id,
               facilitatorName: f.name,
+              facilitatorPosition: f.position,
+              facilitatorUnit: f.unit,
               facilitatorPhotoUrl: f.photoUrl,
               facilitatorPhone: f.phone,
               facilitatorEmail: f.email,
+              facilitatorRating: f.rating?.average ?? f.averageRating ?? null,
+              facilitatorReviewCount: f.rating?.count ?? f.reviewCount ?? 0,
             }))
           } catch {
             return []
@@ -337,59 +341,26 @@ export function PelatihanPage({ onNavigate }) {
 
       <Modal open={Boolean(detailRow)} onClose={() => setDetailKey(null)} title="Detail Kegiatan">
         {detailRow && (
-          <div className="detail-layout">
-            <div className="detail-fields">
-              <div className="detail-field">
-                <div className="detail-label">Nama Kegiatan</div>
-                <div className="detail-value detail-value-lg">{detailRow.name}</div>
-              </div>
-              {detailRow.material && (
-                <div className="detail-field">
-                  <div className="detail-label">Materi</div>
-                  <div className="detail-value">{detailRow.material}</div>
-                </div>
-              )}
-              <div className="detail-field">
-                <div className="detail-label">Kategori</div>
-                <span className={`status-badge ${detailRow.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
-                  {CATEGORY_LABEL[detailRow.category] ?? detailRow.category}
-                </span>
-              </div>
-              {detailRow.role && (
-                <div className="detail-field">
-                  <div className="detail-label">Peran</div>
-                  <div className="detail-value">{detailRow.role}</div>
-                </div>
-              )}
-              <div className="detail-field">
-                <div className="detail-label">Penyelenggara</div>
-                <div className="detail-value">{detailRow.organizer || '-'}</div>
-              </div>
-              <div className="detail-field">
-                <div className="detail-label">Tanggal</div>
-                <div className="detail-value">{detailRow.date || '-'}</div>
-              </div>
-            </div>
-
-            <div className="detail-facilitator-card">
+          <>
+            <div className="th-header">
               {detailRow.facilitatorPhotoUrl ? (
-                <img src={resolveAssetUrl(detailRow.facilitatorPhotoUrl)} alt={detailRow.facilitatorName} className="detail-facilitator-photo" />
+                <img src={resolveAssetUrl(detailRow.facilitatorPhotoUrl)} alt={detailRow.facilitatorName} className="th-photo" />
               ) : (
-                <div className="detail-facilitator-photo detail-facilitator-photo-placeholder">
+                <div className="th-photo th-photo-placeholder">
                   {(detailRow.facilitatorName || '?').charAt(0).toUpperCase()}
                 </div>
               )}
-              <div className="detail-facilitator-name">{detailRow.facilitatorName}</div>
-              <div className="detail-facilitator-tag">Fasilitator</div>
-
-              <div className="detail-facilitator-actions">
+              <div className="th-name">{detailRow.facilitatorName}</div>
+              <div className="th-position">
+                {detailRow.facilitatorPosition || '-'}{detailRow.facilitatorUnit ? ` · ${detailRow.facilitatorUnit}` : ''}
+              </div>
+              <div className="th-rating">
+                ★ {detailRow.facilitatorRating ?? '—'}
+                <span> ({detailRow.facilitatorReviewCount ?? 0} ulasan)</span>
+              </div>
+              <div className="th-contact-actions">
                 {detailRow.facilitatorPhone && (
-                  <a
-                    href={toWhatsAppLink(detailRow.facilitatorPhone)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="detail-contact-button wa"
-                  >
+                  <a href={toWhatsAppLink(detailRow.facilitatorPhone)} target="_blank" rel="noreferrer" className="detail-contact-button wa">
                     ⌾ WhatsApp
                   </a>
                 )}
@@ -398,9 +369,30 @@ export function PelatihanPage({ onNavigate }) {
                     ✉ Email
                   </a>
                 )}
+                <button type="button" className="th-cv-button" onClick={() => onNavigate?.('fasilitator-cv', detailRow.facilitatorId, 'pelatihan')}>
+                  📄 Lihat CV
+                </button>
               </div>
             </div>
-          </div>
+
+            <div className="th-timeline-title">Detail Kegiatan</div>
+            <div className="th-timeline">
+              <div className="th-timeline-item">
+                <div className="th-timeline-date">{detailRow.date || '-'}</div>
+                <div className="th-timeline-content">
+                  <div className="th-timeline-name">{detailRow.name}</div>
+                  {detailRow.material && <div className="th-timeline-material">{detailRow.material}</div>}
+                  <div className="th-timeline-meta">
+                    {[
+                      CATEGORY_LABEL[detailRow.category] ?? detailRow.category,
+                      detailRow.role,
+                      detailRow.organizer,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         <div className="modal-footer">
