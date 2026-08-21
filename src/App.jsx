@@ -29,27 +29,47 @@ const pages = {
   kompetensi: { label: 'Profil Kompetensi', component: CompetencyProfilePage, owner: 'Daniel' },
 }
 
+// Halaman-halaman ini butuh "reset total" tiap ganti fasilitator (biar file
+// upload yang kepilih nggak nyangkut dari sesi sebelumnya). Halaman lain
+// (termasuk 'pencarian') SENGAJA TIDAK dikasih key ini, supaya state
+// internalnya (misal hasil pencarian) nggak ke-reset pas ganti halaman.
+const REMOUNT_ON_FACILITATOR_CHANGE = [
+  'fasilitator-edit',
+  'fasilitator-tambah',
+  'fasilitator-detail',
+  'fasilitator-cv',
+]
+
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard')
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(null)
+  const [cvReturnTo, setCvReturnTo] = useState('fasilitator-detail')
   const page = pages[activePage]
   const Page = page.component
 
-  function handleNavigate(pageId, facilitatorId = null) {
+  function handleNavigate(pageId, facilitatorId = null, returnTo = null) {
     setSelectedFacilitatorId(facilitatorId)
+    if (pageId === 'fasilitator-cv') {
+      setCvReturnTo(returnTo || 'fasilitator-detail')
+    }
     setActivePage(pageId)
   }
+
+  const pageKey = REMOUNT_ON_FACILITATOR_CHANGE.includes(activePage)
+    ? `${activePage}-${selectedFacilitatorId ?? 'new'}`
+    : activePage
 
   return (
     <AppShell activePage={activePage} onNavigate={handleNavigate}>
       <Page
-        key={`${activePage}-${selectedFacilitatorId ?? 'new'}`}
+        key={pageKey}
         data={dashboardData}
         title={page.label}
         owner={page.owner}
         onNavigate={handleNavigate}
         facilitatorId={selectedFacilitatorId}
         selectedFacilitatorId={selectedFacilitatorId}
+        cvReturnTo={cvReturnTo}
         onSelectFacilitator={(id) => handleNavigate('kompetensi', id)}
       />
     </AppShell>

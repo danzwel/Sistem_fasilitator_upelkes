@@ -20,7 +20,7 @@ function formatDateRange(startDate, endDate) {
   return start || end || null
 }
 
-export function CvPreviewPage({ onNavigate, facilitatorId }) {
+export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
   const [facilitator, setFacilitator] = useState(null)
   const [educations, setEducations] = useState([])
   const [relatedTrainings, setRelatedTrainings] = useState([])
@@ -87,7 +87,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId }) {
           <p className="muted">Cek dulu tampilannya, baru export ke PDF.</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="outline-button" onClick={() => onNavigate?.('fasilitator-detail', facilitatorId)}>
+          <button className="outline-button" onClick={() => onNavigate?.(cvReturnTo || 'fasilitator-detail', facilitatorId)}>
             ← Kembali
           </button>
           <button className="primary-button" onClick={() => window.print()}>
