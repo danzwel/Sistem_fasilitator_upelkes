@@ -249,9 +249,9 @@ function blobToDataUrl(blob) {
 
 function downloadCanvasAsPdf(canvas, filename) {
   const pdf = new jsPDF('p', 'mm', 'a4')
-  const margin = 10
-  const pageWidth = 210 - margin * 2
-  const pageHeight = 297 - margin * 2
+  const margin = 0
+  const pageWidth = 210
+  const pageHeight = 297
   const sourcePageHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
   let sourceTop = 0
   let page = 0
