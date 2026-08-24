@@ -13,7 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // sesuai dokumentasi project (backend API jalan di situ pas development).
 const ASSET_ORIGIN = /^https?:\/\//.test(API_BASE_URL)
   ? new URL(API_BASE_URL).origin
-  : 'http://localhost:8000'
+  : ''
 
 export function resolveAssetUrl(url) {
   if (!url) return null

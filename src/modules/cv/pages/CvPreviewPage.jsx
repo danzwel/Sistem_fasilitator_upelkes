@@ -63,10 +63,15 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
     try {
       await Promise.all([...exportNode.querySelectorAll('img')].map(async (image) => {
         if (!image.src || image.src.startsWith('data:')) return
-        const response = await fetch(image.src)
-        if (!response.ok) throw new Error(`Gambar tidak dapat dimuat (${response.status})`)
-        const blob = await response.blob()
-        image.src = await blobToDataUrl(blob)
+        try {
+          const response = await fetch(image.src)
+          if (!response.ok) return
+          const blob = await response.blob()
+          image.src = await blobToDataUrl(blob)
+        } catch {
+          // html2canvas tetap mencoba memakai src asli; satu gambar gagal
+          // tidak boleh menggagalkan seluruh proses export CV.
+        }
       }))
       const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
       await html2pdf().set({
