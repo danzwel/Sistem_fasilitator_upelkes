@@ -56,6 +56,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
     setExporting(true)
     const images = [...cvRef.current.querySelectorAll('img')]
     const originalSources = images.map((image) => image.src)
+    const exportSources = [...originalSources]
     try {
       await Promise.all(images.map(async (image) => {
         if (!image.src || image.src.startsWith('data:')) return
@@ -63,7 +64,10 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           const response = await fetch(image.src)
           if (!response.ok) return
           const blob = await response.blob()
-          image.src = await blobToDataUrl(blob)
+          const dataUrl = await blobToDataUrl(blob)
+          const imageIndex = images.indexOf(image)
+          exportSources[imageIndex] = dataUrl
+          image.src = dataUrl
           await image.decode?.().catch(() => {})
         } catch {
           // html2canvas tetap mencoba memakai src asli; satu gambar gagal
@@ -75,7 +79,18 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         margin: [10, 10, 10, 10],
         filename,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 0,
+          onclone: (clonedDocument) => {
+            clonedDocument.querySelector('.cv-page')?.querySelectorAll('img').forEach((image, index) => {
+              image.src = exportSources[index]
+            })
+          },
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] },
       }).from(cvRef.current).save()
