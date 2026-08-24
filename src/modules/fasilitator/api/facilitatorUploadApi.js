@@ -46,3 +46,33 @@ export function uploadFacilitatorPhoto(facilitatorId, file) {
 export function uploadFacilitatorSignature(facilitatorId, file) {
   return uploadFile(`/facilitators/${facilitatorId}/signature`, file)
 }
+
+export async function getFacilitatorCertificates(facilitatorId) {
+  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`)
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.message || `Gagal memuat sertifikat (${response.status})`)
+  return body.data ?? body
+}
+
+export function uploadFacilitatorCertificate(facilitatorId, file, { name, notes } = {}) {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (name?.trim()) formData.append('name', name.trim())
+  if (notes?.trim()) formData.append('notes', notes.trim())
+
+  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`, {
+    method: 'POST',
+    body: formData,
+  }).then(async (response) => {
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(body.message || `Upload sertifikat gagal (${response.status})`)
+    return body.data ?? body
+  })
+}
+
+export async function deleteFacilitatorCertificate(facilitatorId, certificateId) {
+  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates/${certificateId}`, { method: 'DELETE' })
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.message || `Gagal menghapus sertifikat (${response.status})`)
+  return body.data ?? body
+}
