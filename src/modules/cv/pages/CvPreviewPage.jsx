@@ -54,20 +54,17 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
   async function handleExportPdf() {
     if (!cvRef.current || exporting) return
     setExporting(true)
-    const exportNode = cvRef.current.cloneNode(true)
-    exportNode.style.position = 'absolute'
-    exportNode.style.left = '0'
-    exportNode.style.top = '0'
-    exportNode.style.zIndex = '-1'
-    document.body.appendChild(exportNode)
+    const images = [...cvRef.current.querySelectorAll('img')]
+    const originalSources = images.map((image) => image.src)
     try {
-      await Promise.all([...exportNode.querySelectorAll('img')].map(async (image) => {
+      await Promise.all(images.map(async (image) => {
         if (!image.src || image.src.startsWith('data:')) return
         try {
           const response = await fetch(image.src)
           if (!response.ok) return
           const blob = await response.blob()
           image.src = await blobToDataUrl(blob)
+          await image.decode?.().catch(() => {})
         } catch {
           // html2canvas tetap mencoba memakai src asli; satu gambar gagal
           // tidak boleh menggagalkan seluruh proses export CV.
@@ -81,11 +78,11 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] },
-      }).from(exportNode).save()
+      }).from(cvRef.current).save()
     } catch (exportError) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
-      exportNode.remove()
+      images.forEach((image, index) => { image.src = originalSources[index] })
       setExporting(false)
     }
   }
