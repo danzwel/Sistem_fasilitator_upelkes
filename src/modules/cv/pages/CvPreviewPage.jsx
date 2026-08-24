@@ -65,7 +65,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           const response = await fetch(image.src)
           if (!response.ok) return
           const blob = await response.blob()
-          const dataUrl = await blobToDataUrl(blob)
+          const dataUrl = await prepareImageForExport(image, blob)
           const imageIndex = images.indexOf(image)
           exportSources[imageIndex] = dataUrl
           image.src = dataUrl
@@ -244,6 +244,46 @@ function blobToDataUrl(blob) {
     reader.onload = () => resolve(reader.result)
     reader.onerror = reject
     reader.readAsDataURL(blob)
+  })
+}
+
+async function prepareImageForExport(image, blob) {
+  const source = await blobToDataUrl(blob)
+  const style = getComputedStyle(image)
+  if (style.objectFit !== 'cover') return source
+
+  const loaded = await loadImage(source)
+  const rect = image.getBoundingClientRect()
+  const width = Math.max(1, Math.round(rect.width * 2))
+  const height = Math.max(1, Math.round(rect.height * 2))
+  const targetRatio = width / height
+  const sourceRatio = loaded.naturalWidth / loaded.naturalHeight
+  let sourceWidth = loaded.naturalWidth
+  let sourceHeight = loaded.naturalHeight
+  let sourceX = 0
+  let sourceY = 0
+
+  if (sourceRatio > targetRatio) {
+    sourceWidth = loaded.naturalHeight * targetRatio
+    sourceX = (loaded.naturalWidth - sourceWidth) / 2
+  } else {
+    sourceHeight = loaded.naturalWidth / targetRatio
+    sourceY = (loaded.naturalHeight - sourceHeight) / 2
+  }
+
+  const cropped = document.createElement('canvas')
+  cropped.width = width
+  cropped.height = height
+  cropped.getContext('2d').drawImage(loaded, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height)
+  return cropped.toDataURL('image/png')
+}
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = source
   })
 }
 
