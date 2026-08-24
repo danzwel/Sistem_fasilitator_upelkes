@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import html2pdf from 'html2pdf.js'
 import { getFacilitatorById } from '../../fasilitator/api/facilitatorApi'
 import { getEducations } from '../../fasilitator/api/educationApi'
 import { getTrainings } from '../../training/api/trainingApi'
@@ -27,6 +28,8 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
   const [teachingExperience, setTeachingExperience] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(false)
+  const cvRef = useRef(null)
 
   useEffect(() => {
     if (!facilitatorId) return
@@ -47,6 +50,26 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [facilitatorId])
+
+  async function handleExportPdf() {
+    if (!cvRef.current || exporting) return
+    setExporting(true)
+    try {
+      const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      }).from(cvRef.current).save()
+    } catch (exportError) {
+      setError(`Gagal mengunduh PDF: ${exportError.message}`)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (!facilitatorId) {
     return (
@@ -90,13 +113,13 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           <button className="outline-button" onClick={() => onNavigate?.(cvReturnTo || 'fasilitator-detail', facilitatorId)}>
             ← Kembali
           </button>
-          <button className="primary-button" onClick={() => window.print()}>
-            Export PDF
+          <button className="primary-button" onClick={handleExportPdf} disabled={exporting}>
+            {exporting ? 'Menyiapkan PDF...' : 'Download PDF'}
           </button>
         </div>
       </div>
 
-      <div className="cv-page">
+      <div className="cv-page" ref={cvRef}>
         <div className="cv-photo-slot">
           {facilitator.photoUrl ? (
             <img src={resolveAssetUrl(facilitator.photoUrl)} alt="Foto" />
