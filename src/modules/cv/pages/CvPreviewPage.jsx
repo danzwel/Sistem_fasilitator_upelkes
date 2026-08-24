@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import html2pdf from 'html2pdf.js'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { getFacilitatorById } from '../../fasilitator/api/facilitatorApi'
 import { getEducations } from '../../fasilitator/api/educationApi'
 import { getTrainings } from '../../training/api/trainingApi'
@@ -74,26 +75,27 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           // tidak boleh menggagalkan seluruh proses export CV.
         }
       }))
+      const canvas = await html2canvas(cvRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        logging: false,
+      })
+      const cvRect = cvRef.current.getBoundingClientRect()
+      const scaleX = canvas.width / cvRect.width
+      const scaleY = canvas.height / cvRect.height
+      const context = canvas.getContext('2d')
+      await Promise.all(images.map(async (image, index) => {
+        if (!exportSources[index]?.startsWith('data:')) return
+        const loaded = await loadImage(exportSources[index])
+        const rect = image.getBoundingClientRect()
+        context.drawImage(loaded, (rect.left - cvRect.left) * scaleX, (rect.top - cvRect.top) * scaleY, rect.width * scaleX, rect.height * scaleY)
+      }))
+
       const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
-      await html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          imageTimeout: 0,
-          onclone: (clonedDocument) => {
-            clonedDocument.querySelector('.cv-page')?.querySelectorAll('img').forEach((image, index) => {
-              image.src = exportSources[index]
-            })
-          },
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] },
-      }).from(cvRef.current).save()
+      downloadCanvasAsPdf(canvas, filename)
     } catch (exportError) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
@@ -254,4 +256,36 @@ function blobToDataUrl(blob) {
     reader.onerror = reject
     reader.readAsDataURL(blob)
   })
+}
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = source
+  })
+}
+
+function downloadCanvasAsPdf(canvas, filename) {
+  const pdf = new jsPDF('p', 'mm', 'a4')
+  const margin = 10
+  const pageWidth = 210 - margin * 2
+  const pageHeight = 297 - margin * 2
+  const sourcePageHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
+  let sourceTop = 0
+  let page = 0
+
+  while (sourceTop < canvas.height) {
+    const sourceHeight = Math.min(sourcePageHeight, canvas.height - sourceTop)
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = sourceHeight
+    pageCanvas.getContext('2d').drawImage(canvas, 0, sourceTop, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight)
+    if (page > 0) pdf.addPage()
+    pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', margin, margin, pageWidth, pageWidth * sourceHeight / canvas.width)
+    sourceTop += sourceHeight
+    page += 1
+  }
+  pdf.save(filename)
 }
