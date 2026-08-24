@@ -13,6 +13,9 @@ Modul Daniel memakai data master fasilitator dan riwayat pelatihan/kegiatan dari
 | `DELETE` | `/api/facilitators/:id` | menghapus beserta data terkait |
 | `POST` | `/api/facilitators/:id/photo` | upload foto multipart/form-data |
 | `POST` | `/api/facilitators/:id/signature` | upload TTD multipart/form-data |
+| `GET` | `/api/facilitators/:id/certificates` | daftar semua sertifikat fasilitator |
+| `POST` | `/api/facilitators/:id/certificates` | tambah sertifikat multipart/form-data |
+| `DELETE` | `/api/facilitators/:id/certificates/:certificateId` | hapus satu sertifikat |
 
 Body create/update menggunakan JSON. Field khusus CV:
 
@@ -30,6 +33,8 @@ Body create/update menggunakan JSON. Field khusus CV:
 `competencies` adalah array objek. Ini menjadi sumber bagian “Materi yang Diajarkan” pada CV; `startedTeachingYear` boleh `null`. Array string lama tetap diterima untuk kompatibilitas dan disimpan sebagai objek dengan tahun `null`.
 
 Upload tidak dikirim sebagai base64 JSON. Kirim field file bernama `file` dengan `Content-Type: multipart/form-data`. Respons mengembalikan objek fasilitator dengan `photoUrl` atau `signatureUrl`, misalnya `/uploads/photo-....jpg`; file dapat diakses melalui host API, misalnya `http://localhost:8000/uploads/photo-....jpg`. Folder upload dipatok ke `<project>/storage/uploads` dan tidak bergantung pada folder tempat perintah `node server/index.js` dijalankan.
+
+Sertifikat bersifat one-to-many. Untuk `POST /api/facilitators/:id/certificates`, kirim field multipart `file`, serta opsional `name` dan `notes`. Format file yang diterima: PDF, JPG, PNG, atau WEBP. Upload baru menambah record dan tidak menimpa sertifikat lama.
 
 ## Monitoring, pencarian, profil, dan ulasan
 
