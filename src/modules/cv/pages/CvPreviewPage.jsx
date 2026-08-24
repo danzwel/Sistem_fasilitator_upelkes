@@ -54,7 +54,20 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
   async function handleExportPdf() {
     if (!cvRef.current || exporting) return
     setExporting(true)
+    const exportNode = cvRef.current.cloneNode(true)
+    exportNode.style.position = 'absolute'
+    exportNode.style.left = '0'
+    exportNode.style.top = '0'
+    exportNode.style.zIndex = '-1'
+    document.body.appendChild(exportNode)
     try {
+      await Promise.all([...exportNode.querySelectorAll('img')].map(async (image) => {
+        if (!image.src || image.src.startsWith('data:')) return
+        const response = await fetch(image.src)
+        if (!response.ok) throw new Error(`Gambar tidak dapat dimuat (${response.status})`)
+        const blob = await response.blob()
+        image.src = await blobToDataUrl(blob)
+      }))
       const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
       await html2pdf().set({
         margin: [10, 10, 10, 10],
@@ -63,10 +76,11 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] },
-      }).from(cvRef.current).save()
+      }).from(exportNode).save()
     } catch (exportError) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
+      exportNode.remove()
       setExporting(false)
     }
   }
@@ -214,4 +228,13 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
       </div>
     </section>
   )
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }

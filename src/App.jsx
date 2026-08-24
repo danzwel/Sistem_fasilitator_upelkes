@@ -40,19 +40,32 @@ const REMOUNT_ON_FACILITATOR_CHANGE = [
   'fasilitator-cv',
 ]
 
+const APP_STATE_KEY = 'upelkes:last-route'
+const initialRoute = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(APP_STATE_KEY) || '{}')
+    return pages[saved.activePage] ? saved : {}
+  } catch {
+    return {}
+  }
+}
+
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard')
-  const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(null)
-  const [cvReturnTo, setCvReturnTo] = useState('fasilitator-detail')
+  const [route] = useState(initialRoute)
+  const [activePage, setActivePage] = useState(route.activePage || 'dashboard')
+  const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(route.selectedFacilitatorId || null)
+  const [cvReturnTo, setCvReturnTo] = useState(route.cvReturnTo || 'fasilitator-detail')
   const page = pages[activePage]
   const Page = page.component
 
   function handleNavigate(pageId, facilitatorId = null, returnTo = null) {
+    const nextReturnTo = pageId === 'fasilitator-cv' ? (returnTo || 'fasilitator-detail') : cvReturnTo
     setSelectedFacilitatorId(facilitatorId)
     if (pageId === 'fasilitator-cv') {
-      setCvReturnTo(returnTo || 'fasilitator-detail')
+      setCvReturnTo(nextReturnTo)
     }
     setActivePage(pageId)
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify({ activePage: pageId, selectedFacilitatorId: facilitatorId, cvReturnTo: nextReturnTo }))
   }
 
   const pageKey = REMOUNT_ON_FACILITATOR_CHANGE.includes(activePage)
