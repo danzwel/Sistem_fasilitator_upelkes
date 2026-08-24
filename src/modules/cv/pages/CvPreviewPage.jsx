@@ -83,23 +83,8 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         imageTimeout: 0,
         logging: false,
       })
-      const cvRect = cvRef.current.getBoundingClientRect()
-      const scaleX = canvas.width / cvRect.width
-      const scaleY = canvas.height / cvRect.height
-      const context = canvas.getContext('2d')
-      await Promise.all(images.map(async (image, index) => {
-        if (!exportSources[index]?.startsWith('data:')) return
-        const loaded = await loadImage(exportSources[index])
-        const rect = image.getBoundingClientRect()
-        context.drawImage(loaded, (rect.left - cvRect.left) * scaleX, (rect.top - cvRect.top) * scaleY, rect.width * scaleX, rect.height * scaleY)
-      }))
-
       const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
-      const overlays = images.map((image, index) => ({
-        source: exportSources[index],
-        rect: image.getBoundingClientRect(),
-      }))
-      downloadCanvasAsPdf(canvas, filename, overlays, cvRect, scaleX, scaleY)
+      downloadCanvasAsPdf(canvas, filename)
     } catch (exportError) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
@@ -262,16 +247,7 @@ function blobToDataUrl(blob) {
   })
 }
 
-function loadImage(source) {
-  return new Promise((resolve, reject) => {
-    const image = new Image()
-    image.onload = () => resolve(image)
-    image.onerror = reject
-    image.src = source
-  })
-}
-
-function downloadCanvasAsPdf(canvas, filename, overlays = [], cvRect, scaleX, scaleY) {
+function downloadCanvasAsPdf(canvas, filename) {
   const pdf = new jsPDF('p', 'mm', 'a4')
   const margin = 10
   const pageWidth = 210 - margin * 2
@@ -288,21 +264,6 @@ function downloadCanvasAsPdf(canvas, filename, overlays = [], cvRect, scaleX, sc
     pageCanvas.getContext('2d').drawImage(canvas, 0, sourceTop, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight)
     if (page > 0) pdf.addPage()
     pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', margin, margin, pageWidth, pageWidth * sourceHeight / canvas.width)
-    overlays
-      .filter((overlay) => overlay.source?.startsWith('data:'))
-      .forEach((overlay) => {
-        const imageTop = (overlay.rect.top - cvRect.top) * scaleY
-        const imagePage = Math.floor(imageTop / sourcePageHeight)
-        if (imagePage !== page) return
-        const imageLeft = (overlay.rect.left - cvRect.left) * scaleX
-        const imageY = imageTop - sourceTop
-        const imageXmm = margin + (imageLeft / canvas.width) * pageWidth
-        const imageYmm = margin + (imageY / canvas.width) * pageWidth
-        const imageWmm = (overlay.rect.width * scaleX / canvas.width) * pageWidth
-        const imageHmm = (overlay.rect.height * scaleY / canvas.width) * pageWidth
-        const format = overlay.source.startsWith('data:image/png') ? 'PNG' : 'JPEG'
-        pdf.addImage(overlay.source, format, imageXmm, imageYmm, imageWmm, imageHmm)
-      })
     sourceTop += sourceHeight
     page += 1
   }
