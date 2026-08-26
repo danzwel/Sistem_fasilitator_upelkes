@@ -46,7 +46,8 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         setFacilitator(f)
         setEducations(edu)
         setRelatedTrainings(related)
-        setTeachingExperience(teaching)
+      const today = new Date().toISOString().slice(0, 10)
+      setTeachingExperience(teaching.filter((item) => !item.endDate || item.endDate <= today))
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -187,10 +188,10 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           <p className="cv-empty">Belum ada data materi yang diajarkan.</p>
         ) : (
           <table className="cv-list-table">
-            <thead><tr><th>No</th><th>Nama Materi</th><th>Tahun</th></tr></thead>
+            <thead><tr><th>No</th><th>Nama Materi</th></tr></thead>
             <tbody>
               {facilitator.competencies.map((c, i) => (
-                <tr key={i}><td>{i + 1}</td><td>{c.name}</td><td>{c.startedTeachingYear || '-'}</td></tr>
+                <tr key={i}><td>{i + 1}</td><td>{c.name}</td></tr>
               ))}
             </tbody>
           </table>

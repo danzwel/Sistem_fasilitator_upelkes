@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { getFacilitators, deleteFacilitator } from '../api/facilitatorApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { FacilitatorDetailModal } from '../components/FacilitatorDetailModal'
+import { Modal } from '../../../shared/components/Modal'
+
+const completenessLabels = { photo: 'Foto', signature: 'TTD', certificate: 'Sertifikat', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
 
 export function FasilitatorPage({ onNavigate }) {
   const [facilitators, setFacilitators] = useState([])
@@ -10,6 +13,7 @@ export function FasilitatorPage({ onNavigate }) {
   const [query, setQuery] = useState('')
   const [deletingId, setDeletingId] = useState(null)
   const [detailId, setDetailId] = useState(null)
+  const [completenessId, setCompletenessId] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -51,6 +55,8 @@ export function FasilitatorPage({ onNavigate }) {
         .some((field) => String(field).toLowerCase().includes(q))
     )
   }, [facilitators, query])
+  const completenessPerson = completenessId ? facilitators.find((f) => f.id === completenessId) : null
+  const missingItems = completenessPerson ? Object.entries(completenessPerson.completeness?.checks || {}).filter(([, value]) => !value).map(([key]) => completenessLabels[key] || key) : []
 
   return (
     <section className="page-enter">
@@ -112,7 +118,7 @@ export function FasilitatorPage({ onNavigate }) {
                 <th>Nama</th>
                 <th>Jabatan / Unit Kerja</th>
                 <th>Kontak</th>
-                <th>Status</th>
+                <th>Kelengkapan Data</th>
                 <th aria-label="Aksi"></th>
               </tr>
             </thead>
@@ -152,9 +158,9 @@ export function FasilitatorPage({ onNavigate }) {
                     <div className="table-secondary">{f.email || '-'}</div>
                   </td>
                   <td>
-                    <span className={`status-badge ${f.status === 'active' ? 'lengkap' : 'belum_lengkap'}`}>
-                      {f.status === 'active' ? 'Aktif' : f.status || '-'}
-                    </span>
+                    <button type="button" className={`status-badge ${f.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'} completeness-button`} onClick={() => !f.completeness?.isComplete && setCompletenessId(f.id)} title={f.completeness?.isComplete ? 'Data sudah lengkap' : 'Klik untuk melihat data yang belum dilengkapi'}>
+                      {f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
+                    </button>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -182,6 +188,13 @@ export function FasilitatorPage({ onNavigate }) {
       </div>
 
       <FacilitatorDetailModal facilitatorId={detailId} onClose={() => setDetailId(null)} onNavigate={onNavigate} />
+      <Modal open={Boolean(completenessPerson)} onClose={() => setCompletenessId(null)} title="Kelengkapan Data Fasilitator">
+        {completenessPerson && <div className="completeness-detail">
+          <h3>{completenessPerson.name}</h3>
+          {missingItems.length > 0 ? <><p>Data berikut belum dilengkapi:</p><ul>{missingItems.map((item) => <li key={item}>{item}</li>)}</ul></> : <p>Semua data sudah lengkap.</p>}
+          <button className="outline-button" onClick={() => setCompletenessId(null)}>Tutup</button>
+        </div>}
+      </Modal>
     </section>
   )
 }

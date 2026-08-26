@@ -93,8 +93,8 @@ export function FacilitatorDetailModal({ facilitatorId, onClose, onNavigate }) {
                 </div>
               )}
               <div className="detail-facilitator-name">{facilitator.name}</div>
-              <span className={`status-badge ${facilitator.status === 'active' ? 'lengkap' : 'belum_lengkap'}`} style={{ marginTop: 6 }}>
-                {facilitator.status === 'active' ? 'Aktif' : facilitator.status || '-'}
+              <span className={`status-badge ${facilitator.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`} style={{ marginTop: 6 }}>
+                {facilitator.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
               </span>
 
               <div className="detail-facilitator-actions">

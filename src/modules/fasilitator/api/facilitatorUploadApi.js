@@ -70,6 +70,13 @@ export function uploadFacilitatorCertificate(facilitatorId, file, { name, notes 
   })
 }
 
+export function uploadTrainingCertificate(facilitatorId, trainingId, file) {
+  const formData = new FormData(); formData.append('file', file)
+  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/trainings/${trainingId}/certificate`, { method: 'POST', body: formData }).then(async (response) => {
+    const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || `Upload sertifikat gagal (${response.status})`); return body.data ?? body
+  })
+}
+
 export async function deleteFacilitatorCertificate(facilitatorId, certificateId) {
   const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates/${certificateId}`, { method: 'DELETE' })
   const body = await response.json().catch(() => ({}))

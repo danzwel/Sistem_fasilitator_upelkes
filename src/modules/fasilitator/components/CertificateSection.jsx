@@ -6,7 +6,7 @@ import {
 } from '../api/facilitatorUploadApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 
-export function CertificateSection({ facilitatorId }) {
+export function CertificateSection({ facilitatorId, embedded = false }) {
   const fileRef = useRef(null)
   const [certificates, setCertificates] = useState([])
   const [loading, setLoading] = useState(true)
@@ -66,7 +66,7 @@ export function CertificateSection({ facilitatorId }) {
   }
 
   return (
-    <div className="panel" style={{ marginTop: 18, marginBottom: 18 }}>
+    <div className={embedded ? '' : 'panel'} style={{ marginTop: embedded ? 16 : 18, marginBottom: 18 }}>
       <div className="panel-heading">
         <h3>Sertifikat</h3>
         {!formOpen && <button className="text-button" onClick={() => { setError(null); setFormOpen(true) }}>+ Tambah</button>}
