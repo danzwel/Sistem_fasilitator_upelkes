@@ -7,6 +7,16 @@ import { Modal } from '../../../shared/components/Modal'
 
 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
+function formatAgendaDate(startDate, endDate) {
+  if (!startDate) return { day: '-', month: '-' }
+  const start = new Date(`${startDate}T00:00:00`)
+  const end = new Date(`${(endDate || startDate)}T00:00:00`)
+  const month = monthNames[start.getMonth()].slice(0, 3)
+  if (startDate === (endDate || startDate)) return { day: start.getDate(), month }
+  const endMonth = monthNames[end.getMonth()].slice(0, 3)
+  return { day: `${start.getDate()}–${end.getDate()}`, month: start.getMonth() === end.getMonth() ? month : `${month}–${endMonth}` }
+}
+
 // Map keys to SVG icons for stats
 const statIcons = {
   facilitators: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
@@ -34,6 +44,7 @@ export function DashboardPage({ data, onNavigate }) {
   const [agendaOpen, setAgendaOpen] = useState(false)
   const [agendaSaving, setAgendaSaving] = useState(false)
   const [agendaError, setAgendaError] = useState('')
+  const [selectedAgenda, setSelectedAgenda] = useState(null)
   const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', facilitatorId: '', color: '#9f58cc' })
 
   useEffect(() => { getFacilitators().then(setFacilitators).catch(() => setFacilitators([])) }, [])
@@ -149,10 +160,10 @@ export function DashboardPage({ data, onNavigate }) {
 
           {data.upcomingActivities.length > 0 ? (
             data.upcomingActivities.map(item => (
-              <div className="activity-row" key={item.id}>
-                <div className="date-box">
-                  <b>{item.day ?? (item.date ? new Date(`${item.date}T00:00:00`).getDate() : '-')}</b>
-                  <span>{item.month ?? (item.date ? monthNames[new Date(`${item.date}T00:00:00`).getMonth()].slice(0, 3) : '-')}</span>
+              <div className="activity-row agenda-row" key={item.id} role="button" tabIndex={0} onClick={() => setSelectedAgenda(item)} onKeyDown={(event) => event.key === 'Enter' && setSelectedAgenda(item)}>
+                <div className="date-box agenda-date-box" style={{ '--agenda-color': item.color || '#bf68f5' }}>
+                  <b>{formatAgendaDate(item.startDate || item.date, item.endDate).day}</b>
+                  <span>{formatAgendaDate(item.startDate || item.date, item.endDate).month}</span>
                 </div>
                 <div>
                   <b>{item.name}</b>
@@ -224,6 +235,19 @@ export function DashboardPage({ data, onNavigate }) {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
         </form>
+      </Modal>
+
+      <Modal open={Boolean(selectedAgenda)} onClose={() => setSelectedAgenda(null)} title="Detail Agenda">
+        {selectedAgenda && <div className="agenda-detail">
+          <div className="agenda-detail-color" style={{ background: selectedAgenda.color || '#9f58cc' }} />
+          <h3>{selectedAgenda.name}</h3>
+          <div className="agenda-detail-grid">
+            <span>Fasilitator</span><b>{selectedAgenda.facilitator || '-'}</b>
+            <span>Tanggal</span><b>{formatAgendaDate(selectedAgenda.startDate || selectedAgenda.date, selectedAgenda.endDate).day} {formatAgendaDate(selectedAgenda.startDate || selectedAgenda.date, selectedAgenda.endDate).month}</b>
+            <span>Materi</span><b>{selectedAgenda.material || '-'}</b>
+            <span>Penyelenggara</span><b>{selectedAgenda.organizer || '-'}</b>
+          </div>
+        </div>}
       </Modal>
 
       <div className="bottom-grid">

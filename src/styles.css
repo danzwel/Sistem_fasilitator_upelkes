@@ -1957,6 +1957,11 @@ sofi-font-override.css
   color:#8f89a5;
   margin-top:5px;
 }
+.agenda-row{cursor:pointer}.agenda-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.agenda-detail-color{height:6px;border-radius:99px;margin-bottom:16px}.agenda-detail h3{font:600 19px 'Space Grotesk',sans-serif;margin:0 0 16px;color:var(--text-primary)}.agenda-detail-grid{display:grid;grid-template-columns:120px 1fr;gap:10px;border-top:1px solid var(--border-default);padding-top:12px;font-size:13px}.agenda-detail-grid span{color:var(--text-secondary)}
+.completeness-button{font:inherit;cursor:pointer}.completeness-button.lengkap{cursor:default}
+.completeness-detail h3{margin:0 0 10px;font:600 18px 'Space Grotesk',sans-serif}.completeness-detail p{color:var(--text-secondary);font-size:13px}.completeness-detail ul{margin:12px 0 20px;padding-left:22px;color:#f0b0bd;font-size:13px;line-height:1.8}
+
+.agenda-date-box{border-color:color-mix(in srgb,var(--agenda-color) 55%, transparent);background:color-mix(in srgb,var(--agenda-color) 14%, transparent)}.agenda-date-box b{color:var(--agenda-color)}.agenda-date-box:has(b:nth-child(1)){min-width:58px}
 .calendar-grid button{border:0;background:none;color:inherit;font:inherit;cursor:pointer;min-height:34px;border-radius:8px}
 .calendar-grid button:not(.outside):not(.today):hover{background:var(--bg-surface-hover);color:var(--text-primary)}
 .calendar-event-bars{display:flex;flex-direction:column;gap:2px;margin-top:2px;padding:0 3px!important}.calendar-event-bars i{display:block;width:100%;height:3px;border-radius:2px}

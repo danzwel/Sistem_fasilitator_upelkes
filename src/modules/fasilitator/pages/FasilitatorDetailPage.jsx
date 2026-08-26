@@ -183,6 +183,7 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
                   <div>
                     <div className="table-primary">{t.name}</div>
                     <div className="table-secondary">{[t.organizer, t.date].filter(Boolean).join(' · ')}</div>
+                    {t.certificateUrl && <a className="table-secondary" href={resolveAssetUrl(t.certificateUrl)} target="_blank" rel="noreferrer">Lihat sertifikat</a>}
                   </div>
                 </div>
               ))
