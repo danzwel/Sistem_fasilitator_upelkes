@@ -3,6 +3,8 @@ import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
 import { getTrainings, createTraining, updateTraining, deleteTraining } from '../api/trainingApi'
 import { Modal } from '../../../shared/components/Modal'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { SearchableInput } from '../../../shared/components/SearchableInput'
+import { trainingCatalog, roleCatalog } from '../data/trainingCatalog'
 
 const CATEGORY_LABEL = {
   related_training: 'Terkait Materi',
@@ -119,6 +121,8 @@ export function PelatihanPage({ onNavigate }) {
     e.preventDefault()
     if (!form.facilitatorId) return setFormError('Pilih fasilitator dulu.')
     if (!form.name.trim()) return setFormError('Nama kegiatan wajib diisi.')
+    if (!trainingCatalog.includes(form.name.trim())) return setFormError('Pilih nama pelatihan dari daftar yang tersedia.')
+    if (form.category === 'teaching_experience' && form.role && !roleCatalog.includes(form.role.trim())) return setFormError('Pilih peran dari daftar yang tersedia.')
 
     setSaving(true)
     setFormError(null)
@@ -168,6 +172,8 @@ export function PelatihanPage({ onNavigate }) {
   async function handleEditSubmit(e, r) {
     e.preventDefault()
     if (!editForm.name.trim()) return setEditError('Nama kegiatan wajib diisi.')
+    if (!trainingCatalog.includes(editForm.name.trim()) && editForm.name.trim() !== editRow?.name) return setEditError('Pilih nama pelatihan dari daftar yang tersedia.')
+    if (editForm.category === 'teaching_experience' && editForm.role && !roleCatalog.includes(editForm.role.trim())) return setEditError('Pilih peran dari daftar yang tersedia.')
 
     setEditSaving(true)
     setEditError(null)
@@ -230,36 +236,14 @@ export function PelatihanPage({ onNavigate }) {
           <form onSubmit={handleSubmit}>
             {formError && <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{formError}</div>}
             <div className="form-grid">
-              <label className="form-field">
-                <span>Fasilitator <span className="required-mark">*</span></span>
-                <select value={form.facilitatorId} onChange={(e) => setForm((p) => ({ ...p, facilitatorId: e.target.value }))}
-                  style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 10, padding: '11px 13px', color: '#f0ecff' }}>
-                  <option value="">Pilih fasilitator...</option>
-                  {facilitators.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
-              </label>
-              <label className="form-field">
-                <span>Kategori <span className="required-mark">*</span></span>
-                <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                  style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 10, padding: '11px 13px', color: '#f0ecff' }}>
-                  <option value="teaching_experience">Pengalaman Melatih/Mengajar</option>
-                  <option value="related_training">Pendidikan/Pelatihan Terkait Materi</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span>
-                <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
-              </label>
+              <SearchableInput id="training-facilitator" label={<>Fasilitator <span className="required-mark">*</span></>} value={facilitators.find((f) => String(f.id) === String(form.facilitatorId))?.name || ''} options={facilitators.map((f) => f.name)} placeholder="Ketik untuk mencari fasilitator..." required onChange={(value) => setForm((p) => ({ ...p, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
+              <SearchableInput id="training-category" label={<>Kategori <span className="required-mark">*</span></>} value={form.category === 'teaching_experience' ? 'Pengalaman Melatih/Mengajar' : 'Pendidikan/Pelatihan Terkait Materi'} options={['Pengalaman Melatih/Mengajar', 'Pendidikan/Pelatihan Terkait Materi']} required onChange={(value) => setForm((p) => ({ ...p, category: value.startsWith('Pendidikan') ? 'related_training' : 'teaching_experience' }))} />
+              <SearchableInput id="training-name" label={<>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></>} value={form.name} options={trainingCatalog} placeholder="Ketik untuk mencari nama pelatihan..." required onChange={(value) => setForm((p) => ({ ...p, name: value }))} />
               <label className="form-field">
                 <span>Materi / Mata Pelatihan</span>
                 <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
               </label>
-              {form.category === 'teaching_experience' && (
-                <label className="form-field">
-                  <span>Peran</span>
-                  <input type="text" value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))} placeholder="Narasumber / Fasilitator" />
-                </label>
-              )}
+              {form.category === 'teaching_experience' && <SearchableInput id="training-role" label="Peran" value={form.role} options={roleCatalog} placeholder="Ketik untuk mencari peran..." onChange={(value) => setForm((p) => ({ ...p, role: value }))} />}
               <label className="form-field">
                 <span>Penyelenggara</span>
                 <input type="text" value={form.organizer} onChange={(e) => setForm((p) => ({ ...p, organizer: e.target.value }))} />
@@ -405,28 +389,13 @@ export function PelatihanPage({ onNavigate }) {
           <form onSubmit={(e) => handleEditSubmit(e, editRow)}>
             {editError && <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{editError}</div>}
             <div className="form-grid">
-              <label className="form-field">
-                <span>Kategori</span>
-                <select value={editForm.category} onChange={(e) => setEditForm((p) => ({ ...p, category: e.target.value }))}
-                  style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 10, padding: '11px 13px', color: '#f0ecff' }}>
-                  <option value="teaching_experience">Pengalaman Melatih/Mengajar</option>
-                  <option value="related_training">Pendidikan/Pelatihan Terkait Materi</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span>
-                <input type="text" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
-              </label>
+              <SearchableInput id="edit-training-category" label="Kategori" value={editForm.category === 'teaching_experience' ? 'Pengalaman Melatih/Mengajar' : 'Pendidikan/Pelatihan Terkait Materi'} options={['Pengalaman Melatih/Mengajar', 'Pendidikan/Pelatihan Terkait Materi']} onChange={(value) => setEditForm((p) => ({ ...p, category: value.startsWith('Pendidikan') ? 'related_training' : 'teaching_experience' }))} />
+              <SearchableInput id="edit-training-name" label={<>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></>} value={editForm.name} options={trainingCatalog} placeholder="Ketik untuk mencari nama pelatihan..." required onChange={(value) => setEditForm((p) => ({ ...p, name: value }))} />
               <label className="form-field">
                 <span>Materi / Mata Pelatihan</span>
                 <input type="text" value={editForm.material} onChange={(e) => setEditForm((p) => ({ ...p, material: e.target.value }))} />
               </label>
-              {editForm.category === 'teaching_experience' && (
-                <label className="form-field">
-                  <span>Peran</span>
-                  <input type="text" value={editForm.role} onChange={(e) => setEditForm((p) => ({ ...p, role: e.target.value }))} />
-                </label>
-              )}
+              {editForm.category === 'teaching_experience' && <SearchableInput id="edit-training-role" label="Peran" value={editForm.role} options={roleCatalog} placeholder="Ketik untuk mencari peran..." onChange={(value) => setEditForm((p) => ({ ...p, role: value }))} />}
               <label className="form-field">
                 <span>Penyelenggara</span>
                 <input type="text" value={editForm.organizer} onChange={(e) => setEditForm((p) => ({ ...p, organizer: e.target.value }))} />

@@ -123,12 +123,12 @@ export function DashboardPage({ data, onNavigate }) {
             data.upcomingActivities.map(item => (
               <div className="activity-row" key={item.id}>
                 <div className="date-box">
-                  <b>{item.day}</b>
-                  <span>{item.month}</span>
+                  <b>{item.day ?? (item.date ? new Date(`${item.date}T00:00:00`).getDate() : '-')}</b>
+                  <span>{item.month ?? (item.date ? monthNames[new Date(`${item.date}T00:00:00`).getMonth()].slice(0, 3) : '-')}</span>
                 </div>
                 <div>
                   <b>{item.name}</b>
-                  <p>{item.facilitator} · {item.status}</p>
+                  <p>{item.facilitator} · {item.organizer || 'Terjadwal'}</p>
                 </div>
               </div>
             ))
@@ -268,8 +268,8 @@ function WelcomeTrainingBanner({ activities }) {
   
   // Try to find today's training.
   const todayActivity = activities?.find(activity => {
-    if (activity.tanggal) {
-      const activityDate = new Date(activity.tanggal);
+    if (activity.tanggal || activity.date) {
+      const activityDate = new Date(`${activity.tanggal || activity.date}T00:00:00`);
       return activityDate.getDate() === today.getDate() &&
              activityDate.getMonth() === today.getMonth() &&
              activityDate.getFullYear() === today.getFullYear();

@@ -23,6 +23,39 @@ export function monitoring(filter = '') {
   return rows.map((row) => ({ id: row.id, name: row.name, position: row.position, photoUrl: row.photo_url, requirements: [{ key: 'photo', label: 'Foto', isComplete: Boolean(row.photo_url) }, { key: 'signature', label: 'TTD', isComplete: Boolean(row.signature_url) }, { key: 'certificate', label: 'Sertifikat', isComplete: Boolean(row.has_certificate) }, { key: 'material', label: 'Materi', isComplete: Boolean(row.has_material) }, { key: 'education', label: 'Riwayat Pendidikan', isComplete: Boolean(row.has_education) }, { key: 'supporting', label: 'Dokumen Pendukung', isComplete: Boolean(row.has_supporting) }] }))
 }
 export function search(filters) { const conditions = []; const params = []; if (filters.query) { conditions.push('LOWER(f.name) LIKE ?'); params.push(`%${filters.query.toLowerCase()}%`) } if (filters.competency) { conditions.push('EXISTS (SELECT 1 FROM facilitator_competencies c WHERE c.facilitator_id = f.id AND LOWER(c.name) LIKE ?)'); params.push(`%${filters.competency.toLowerCase()}%`) } if (filters.status) { conditions.push('f.status = ?'); params.push(filters.status) } if (filters.min_rating) { conditions.push('COALESCE((SELECT AVG(rating) FROM reviews r WHERE r.facilitator_id = f.id), 0) >= ?'); params.push(Number(filters.min_rating)) } const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''; const rows = db.prepare(`SELECT f.id, f.name, f.photo_url, f.status, ROUND(COALESCE((SELECT AVG(r.rating) FROM reviews r WHERE r.facilitator_id = f.id), 0), 1) average_rating, (SELECT COUNT(*) FROM reviews r WHERE r.facilitator_id = f.id) rating_count, (SELECT COUNT(*) FROM trainings t WHERE t.facilitator_id = f.id) training_count FROM facilitators f ${where} ORDER BY f.name LIMIT 50`).all(...params); return rows.map((row) => ({ id: row.id, name: row.name, photoUrl: row.photo_url, status: row.status, statusLabel: row.status === 'active' ? 'Aktif' : 'Tidak aktif', averageRating: row.average_rating || null, ratingCount: row.rating_count, trainingCount: row.training_count, competencies: db.prepare('SELECT name, started_teaching_year startedTeachingYear FROM facilitator_competencies WHERE facilitator_id = ? ORDER BY name').all(row.id) })) }
+export function dashboardSummary() {
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const monthStart = `${today.slice(0, 7)}-01`
+  const total = db.prepare('SELECT COUNT(*) count FROM facilitators').get().count
+  const completeCondition = `f.photo_url IS NOT NULL AND f.photo_url <> '' AND f.signature_url IS NOT NULL AND f.signature_url <> '' AND EXISTS (SELECT 1 FROM facilitator_documents d WHERE d.facilitator_id = f.id AND d.type = 'certificate') AND EXISTS (SELECT 1 FROM trainings t WHERE t.facilitator_id = f.id AND TRIM(COALESCE(t.material, '')) <> '') AND EXISTS (SELECT 1 FROM facilitator_educations e WHERE e.facilitator_id = f.id) AND EXISTS (SELECT 1 FROM facilitator_documents d WHERE d.facilitator_id = f.id AND d.type = 'supporting')`
+  const count = (sql, ...params) => db.prepare(sql).get(...params).count
+  const complete = count(`SELECT COUNT(*) count FROM facilitators f WHERE ${completeCondition}`)
+  const activities = count('SELECT COUNT(*) count FROM trainings')
+  const thisMonth = count("SELECT COUNT(*) count FROM trainings WHERE event_date >= ? AND event_date < date(?, '+1 month')", monthStart, monthStart)
+  const newSubmissions = count('SELECT COUNT(*) count FROM facilitators WHERE created_at >= ?', monthStart)
+  const missing = {
+    photo: count("SELECT COUNT(*) count FROM facilitators WHERE photo_url IS NULL OR photo_url = ''"),
+    signature: count("SELECT COUNT(*) count FROM facilitators WHERE signature_url IS NULL OR signature_url = ''"),
+    certificate: count("SELECT COUNT(*) count FROM facilitators f WHERE NOT EXISTS (SELECT 1 FROM facilitator_documents d WHERE d.facilitator_id = f.id AND d.type = 'certificate')"),
+    materials: count("SELECT COUNT(*) count FROM facilitators f WHERE NOT EXISTS (SELECT 1 FROM trainings t WHERE t.facilitator_id = f.id AND TRIM(COALESCE(t.material, '')) <> '')"),
+  }
+  const upcoming = db.prepare(`SELECT t.id, t.name, t.material, t.event_date date, t.role, t.organizer, f.name facilitator, t.category FROM trainings t JOIN facilitators f ON f.id = t.facilitator_id WHERE t.event_date >= ? ORDER BY t.event_date ASC LIMIT 5`).all(today)
+  const calendarActivities = db.prepare("SELECT id, name, event_date date FROM trainings WHERE event_date >= ? AND event_date < date(?, '+1 month') ORDER BY event_date").all(monthStart, monthStart)
+  return { stats: [
+    { key: 'facilitators', label: 'Total Fasilitator', value: total, tone: 'purple' },
+    { key: 'complete', label: 'Data Lengkap', value: complete, tone: 'green' },
+    { key: 'incomplete', label: 'Data Belum Lengkap', value: total - complete, tone: 'orange' },
+    { key: 'activities', label: 'Total Pelatihan / Kegiatan', value: activities, tone: 'blue' },
+    { key: 'newSubmissions', label: 'Pengajuan Baru', value: newSubmissions, tone: 'pink' },
+    { key: 'thisMonth', label: 'Kegiatan Bulan Ini', value: thisMonth, tone: 'cyan' },
+  ], upcomingActivities: upcoming, calendarActivities, monitoring: [
+    { key: 'photo', label: 'Belum memiliki foto', value: missing.photo },
+    { key: 'signature', label: 'Belum memiliki TTD', value: missing.signature },
+    { key: 'certificate', label: 'Belum memiliki sertifikat', value: missing.certificate },
+    { key: 'materials', label: 'Belum memiliki materi', value: missing.materials },
+  ], notifications: { missing, upcomingCount: upcoming.length, newSubmissions } }
+}
 const certificateSelect = 'SELECT id, name, url, notes, created_at createdAt FROM facilitator_documents WHERE facilitator_id = ? AND type = \'certificate\''
 export function listCertificates(id) { if (!getFacilitator(id)) return null; return db.prepare(`${certificateSelect} ORDER BY created_at DESC, id DESC`).all(id) }
 export function createCertificate(id, input) { if (!getFacilitator(id)) return null; const name = input.name?.trim() || 'Sertifikat'; const result = db.prepare("INSERT INTO facilitator_documents (facilitator_id, type, name, url, notes) VALUES (?, 'certificate', ?, ?, ?)").run(id, name, input.url, input.notes?.trim() || null); return db.prepare(`${certificateSelect} AND id = ?`).get(id, result.lastInsertRowid) }

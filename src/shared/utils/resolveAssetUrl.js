@@ -11,9 +11,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 // Kalau VITE_API_BASE_URL berupa URL absolut (http://...), ambil origin-nya.
 // Kalau cuma '/api' (relatif, lewat proxy Vite), fallback ke localhost:8000
 // sesuai dokumentasi project (backend API jalan di situ pas development).
-const ASSET_ORIGIN = /^https?:\/\//.test(API_BASE_URL)
-  ? new URL(API_BASE_URL).origin
-  : 'http://localhost:8000'
+// Asset upload memakai origin frontend secara default agar browser dapat
+// membaca foto/TTD saat export PDF tanpa bergantung pada CORS backend.
+// Jika frontend dan API dideploy di host berbeda, isi VITE_ASSET_BASE_URL.
+const ASSET_ORIGIN = import.meta.env.VITE_ASSET_BASE_URL || ''
 
 export function resolveAssetUrl(url) {
   if (!url) return null

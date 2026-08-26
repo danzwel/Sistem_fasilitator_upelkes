@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { getFacilitatorById } from '../../fasilitator/api/facilitatorApi'
 import { getEducations } from '../../fasilitator/api/educationApi'
 import { getTrainings } from '../../training/api/trainingApi'
@@ -27,6 +29,8 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
   const [teachingExperience, setTeachingExperience] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(false)
+  const cvRef = useRef(null)
 
   useEffect(() => {
     if (!facilitatorId) return
@@ -47,6 +51,47 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [facilitatorId])
+
+  async function handleExportPdf() {
+    if (!cvRef.current || exporting) return
+    setExporting(true)
+    const images = [...cvRef.current.querySelectorAll('img')]
+    const originalSources = images.map((image) => image.src)
+    const exportSources = [...originalSources]
+    try {
+      await Promise.all(images.map(async (image) => {
+        if (!image.src || image.src.startsWith('data:')) return
+        try {
+          const response = await fetch(image.src)
+          if (!response.ok) return
+          const blob = await response.blob()
+          const dataUrl = await prepareImageForExport(image, blob)
+          const imageIndex = images.indexOf(image)
+          exportSources[imageIndex] = dataUrl
+          image.src = dataUrl
+          await image.decode?.().catch(() => {})
+        } catch {
+          // html2canvas tetap mencoba memakai src asli; satu gambar gagal
+          // tidak boleh menggagalkan seluruh proses export CV.
+        }
+      }))
+      const canvas = await html2canvas(cvRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        logging: false,
+      })
+      const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
+      downloadCanvasAsPdf(canvas, filename)
+    } catch (exportError) {
+      setError(`Gagal mengunduh PDF: ${exportError.message}`)
+    } finally {
+      images.forEach((image, index) => { image.src = originalSources[index] })
+      setExporting(false)
+    }
+  }
 
   if (!facilitatorId) {
     return (
@@ -90,13 +135,13 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           <button className="outline-button" onClick={() => onNavigate?.(cvReturnTo || 'fasilitator-detail', facilitatorId)}>
             ← Kembali
           </button>
-          <button className="primary-button" onClick={() => window.print()}>
-            Export PDF
+          <button className="primary-button" onClick={handleExportPdf} disabled={exporting}>
+            {exporting ? 'Menyiapkan PDF...' : 'Download PDF'}
           </button>
         </div>
       </div>
 
-      <div className="cv-page">
+      <div className="cv-page" ref={cvRef}>
         <div className="cv-photo-slot">
           {facilitator.photoUrl ? (
             <img src={resolveAssetUrl(facilitator.photoUrl)} alt="Foto" />
@@ -191,4 +236,76 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
       </div>
     </section>
   )
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function prepareImageForExport(image, blob) {
+  const source = await blobToDataUrl(blob)
+  const style = getComputedStyle(image)
+  if (style.objectFit !== 'cover') return source
+
+  const loaded = await loadImage(source)
+  const rect = image.getBoundingClientRect()
+  const width = Math.max(1, Math.round(rect.width * 2))
+  const height = Math.max(1, Math.round(rect.height * 2))
+  const targetRatio = width / height
+  const sourceRatio = loaded.naturalWidth / loaded.naturalHeight
+  let sourceWidth = loaded.naturalWidth
+  let sourceHeight = loaded.naturalHeight
+  let sourceX = 0
+  let sourceY = 0
+
+  if (sourceRatio > targetRatio) {
+    sourceWidth = loaded.naturalHeight * targetRatio
+    sourceX = (loaded.naturalWidth - sourceWidth) / 2
+  } else {
+    sourceHeight = loaded.naturalWidth / targetRatio
+    sourceY = (loaded.naturalHeight - sourceHeight) / 2
+  }
+
+  const cropped = document.createElement('canvas')
+  cropped.width = width
+  cropped.height = height
+  cropped.getContext('2d').drawImage(loaded, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, width, height)
+  return cropped.toDataURL('image/png')
+}
+
+function loadImage(source) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = source
+  })
+}
+
+function downloadCanvasAsPdf(canvas, filename) {
+  const pdf = new jsPDF('p', 'mm', 'a4')
+  const margin = 0
+  const pageWidth = 210
+  const pageHeight = 297
+  const sourcePageHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
+  let sourceTop = 0
+  let page = 0
+
+  while (sourceTop < canvas.height) {
+    const sourceHeight = Math.min(sourcePageHeight, canvas.height - sourceTop)
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = sourceHeight
+    pageCanvas.getContext('2d').drawImage(canvas, 0, sourceTop, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight)
+    if (page > 0) pdf.addPage()
+    pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', margin, margin, pageWidth, pageWidth * sourceHeight / canvas.width)
+    sourceTop += sourceHeight
+    page += 1
+  }
+  pdf.save(filename)
 }
