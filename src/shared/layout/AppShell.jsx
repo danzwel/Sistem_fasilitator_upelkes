@@ -36,8 +36,27 @@ const navItems = [
   ['pencarian', navIcons.pencarian, 'Cari Fasilitator'],
 ]
 
-export function AppShell({ activePage, onNavigate, children }) {
+export function AppShell({ activePage, onNavigate, children, notifications: notificationData }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [readNotificationIds, setReadNotificationIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('upelkes:read-notifications') || '[]')) } catch { return new Set() }
+  })
+  const notifications = [
+    ...(notificationData?.newSubmissions > 0 ? [{ id: 'new', icon: '✦', title: 'Pengajuan baru', text: `${notificationData.newSubmissions} fasilitator ditambahkan bulan ini.`, page: 'fasilitator' }] : []),
+    ...(notificationData?.upcomingCount > 0 ? [{ id: 'agenda', icon: '◷', title: 'Agenda mendatang', text: `${notificationData.upcomingCount} kegiatan terdekat menunggu perhatian.`, page: 'pelatihan' }] : []),
+    ...(notificationData?.missing?.photo > 0 ? [{ id: 'photo', icon: '!', title: 'Data belum lengkap', text: `${notificationData.missing.photo} fasilitator belum memiliki foto.`, page: 'monitoring' }] : []),
+    ...(notificationData?.missing?.signature > 0 ? [{ id: 'signature', icon: '!', title: 'TTD belum tersedia', text: `${notificationData.missing.signature} fasilitator belum memiliki TTD.`, page: 'monitoring' }] : []),
+  ]
+  const unreadNotifications = notifications.filter((item) => !readNotificationIds.has(item.id))
+  function markNotificationRead(id) {
+    setReadNotificationIds((current) => {
+      const next = new Set(current)
+      next.add(id)
+      localStorage.setItem('upelkes:read-notifications', JSON.stringify([...next]))
+      return next
+    })
+  }
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {
@@ -114,18 +133,24 @@ export function AppShell({ activePage, onNavigate, children }) {
           </div>
 
           <div className="topbar-actions">
-            <div className="search">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input aria-label="Cari" placeholder="Cari menu atau data..." />
-            </div>
-
-            <button className="icon-button" aria-label="Notifikasi">
+            <div className="notification-wrap">
+            <button className="icon-button" aria-label="Notifikasi" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}>
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
+              {unreadNotifications.length > 0 && <span className="notification-dot">{unreadNotifications.length}</span>}
             </button>
+            {notificationsOpen && (
+              <div className="notification-panel">
+                <div className="notification-heading"><b>Notifikasi {unreadNotifications.length > 0 && <small>({unreadNotifications.length} belum dibaca)</small>}</b><button onClick={() => setNotificationsOpen(false)} aria-label="Tutup">×</button></div>
+                {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi baru.</p> : notifications.map((item) => (
+                  <button key={item.id} className={`notification-item ${readNotificationIds.has(item.id) ? 'read' : 'unread'}`} onClick={() => { markNotificationRead(item.id); setNotificationsOpen(false); onNavigate(item.page) }}>
+                    <span>{item.icon}</span><span><b>{item.title}</b><small>{item.text}</small></span>
+                  </button>
+                ))}
+              </div>
+            )}
+            </div>
 
             <div className="avatar" title="Admin Profil">AD</div>
           </div>

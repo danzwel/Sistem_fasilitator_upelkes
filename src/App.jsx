@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { dashboardData } from './modules/dashboard/data/dashboardData'
+import { getDashboardSummary } from './modules/dashboard/api/dashboardApi'
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage'
 import { MonitoringPage } from './modules/monitoring/pages/MonitoringPage'
 import { SearchPage } from './modules/search/pages/SearchPage'
@@ -55,6 +56,11 @@ export default function App() {
   const [activePage, setActivePage] = useState(route.activePage || 'dashboard')
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(route.selectedFacilitatorId || null)
   const [cvReturnTo, setCvReturnTo] = useState(route.cvReturnTo || 'fasilitator-detail')
+  const [dashboard, setDashboard] = useState(dashboardData)
+
+  useEffect(() => {
+    getDashboardSummary().then(setDashboard).catch((error) => console.error('Gagal memuat dashboard:', error))
+  }, [activePage])
   const page = pages[activePage]
   const Page = page.component
 
@@ -73,10 +79,10 @@ export default function App() {
     : activePage
 
   return (
-    <AppShell activePage={activePage} onNavigate={handleNavigate}>
+    <AppShell activePage={activePage} onNavigate={handleNavigate} notifications={dashboard.notifications}>
       <Page
         key={pageKey}
-        data={dashboardData}
+        data={dashboard}
         title={page.label}
         owner={page.owner}
         onNavigate={handleNavigate}

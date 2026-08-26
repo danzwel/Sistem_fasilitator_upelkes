@@ -29,6 +29,7 @@ const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`)
   try {
     if (request.method === 'GET' && url.pathname === '/api/health') return json(response, 200, { status: 'ok' })
+    if (request.method === 'GET' && url.pathname === '/api/dashboard') return json(response, 200, { data: facilitators.dashboardSummary() })
     if (request.method === 'POST' && url.pathname === '/api/auth/setup') {
       if (db.prepare('SELECT COUNT(*) count FROM users').get().count) return json(response, 409, { message: 'Admin awal sudah pernah dibuat.' })
       const input = await readJson(request); if (!input.name?.trim() || !input.email?.trim() || !input.password || input.password.length < 8) return invalid(response, { setup: 'Nama, email, dan password minimal 8 karakter wajib diisi.' })
