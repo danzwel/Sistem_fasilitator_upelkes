@@ -287,39 +287,21 @@ export function PelatihanPage({ onNavigate }) {
         ) : filtered.length === 0 ? (
           <div className="empty-state"><span>◌</span><p>Belum ada data pelatihan yang cocok.</p></div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Nama Kegiatan</th><th>Materi</th><th>Kategori</th><th>Fasilitator</th><th>Peran</th><th>Penyelenggara</th><th>Bulan/Tahun</th><th aria-label="Aksi"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={rowKey(r)}>
-                  <td><div className="table-primary">{r.name}</div></td>
-                  <td><div className="table-secondary">{r.material || '-'}</div></td>
-                  <td>
-                    <span className={`status-badge ${r.category === 'teaching_experience' ? 'lengkap' : 'belum_lengkap'}`}>
-                      {CATEGORY_LABEL[r.category] ?? r.category}
-                    </span>
-                  </td>
-                  <td><div className="table-secondary">{r.facilitatorName}</div></td>
-                  <td><div className="table-secondary">{r.role || '-'}</div></td>
-                  <td><div className="table-secondary">{r.organizer || '-'}</div></td>
-                  <td><div className="table-secondary">{formatBulanTahun(r.date)}</div></td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                      <button className="text-button" onClick={() => openDetail(r)}>Detail</button>
-                      <button className="text-button" onClick={() => openEdit(r)}>Edit</button>
-                      <button className="text-button" style={{ color: '#e6a8bd' }} disabled={deletingKey === rowKey(r)} onClick={() => handleDelete(r)}>
-                        {deletingKey === rowKey(r) ? 'Menghapus...' : 'Hapus'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="training-card-grid">
+            {[...new Map(filtered.map((row) => [row.name, filtered.filter((item) => item.name === row.name)])).values()].map((group) => {
+              const first = group[0]
+              return <article className="training-card" key={first.name}>
+                <button className="training-card-main" onClick={() => openDetail(first)}>
+                  <span className="eyebrow">{CATEGORY_LABEL[first.category] ?? first.category}</span>
+                  <h3>{first.name}</h3>
+                  <p>{first.material || 'Materi belum diisi'}</p>
+                  <strong>{group.length} fasilitator terdaftar</strong>
+                </button>
+                <div className="training-card-facilitators">{group.map((item) => <span key={rowKey(item)}>{item.facilitatorName}</span>)}</div>
+                <div className="training-card-actions"><button className="text-button" onClick={() => openDetail(first)}>Lihat fasilitator →</button><button className="text-button" onClick={() => openEdit(first)}>Edit</button></div>
+              </article>
+            })}
+          </div>
         )}
       </div>
 

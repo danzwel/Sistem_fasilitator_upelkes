@@ -10,17 +10,15 @@ import { useState } from 'react'
 export function CompetencySection({ value = [], onChange }) {
   const [formOpen, setFormOpen] = useState(false)
   const [draftName, setDraftName] = useState('')
-  const [draftYear, setDraftYear] = useState('')
 
   function addItem(e) {
     e.preventDefault()
     if (!draftName.trim()) return
     onChange([
       ...value,
-      { name: draftName.trim(), startedTeachingYear: draftYear ? Number(draftYear) : null },
+      { name: draftName.trim() },
     ])
     setDraftName('')
-    setDraftYear('')
     setFormOpen(false)
   }
 
@@ -47,10 +45,6 @@ export function CompetencySection({ value = [], onChange }) {
               <span>Nama Materi <span className="required-mark">*</span></span>
               <input type="text" value={draftName} onChange={(e) => setDraftName(e.target.value)} placeholder="Manajemen Pelatihan" />
             </label>
-            <label className="form-field">
-              <span>Tahun Mulai Mengajar</span>
-              <input type="number" value={draftYear} onChange={(e) => setDraftYear(e.target.value)} placeholder="2018" />
-            </label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button className="primary-button" type="submit" style={{ marginTop: 0 }}>Simpan</button>
@@ -69,7 +63,6 @@ export function CompetencySection({ value = [], onChange }) {
             <div key={i} className="activity-row">
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{item.name}</div>
-                {item.startedTeachingYear && <div className="table-secondary">sejak {item.startedTeachingYear}</div>}
               </div>
               <button type="button" className="text-button" style={{ color: '#e6a8bd' }} onClick={() => removeItem(i)}>
                 Hapus

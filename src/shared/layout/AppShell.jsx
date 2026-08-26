@@ -16,24 +16,12 @@ const navIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
     </svg>
   ),
-  monitoring: (
-    <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-  pencarian: (
-    <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  ),
 }
 
 const navItems = [
   ['dashboard', navIcons.dashboard, 'Dashboard'],
   ['fasilitator', navIcons.fasilitator, 'Fasilitator'],
   ['pelatihan', navIcons.pelatihan, 'Pelatihan'],
-  ['monitoring', navIcons.monitoring, 'Monitoring'],
-  ['pencarian', navIcons.pencarian, 'Cari Fasilitator'],
 ]
 
 export function AppShell({ activePage, onNavigate, children, notifications: notificationData }) {
@@ -45,8 +33,8 @@ export function AppShell({ activePage, onNavigate, children, notifications: noti
   const notifications = [
     ...(notificationData?.newSubmissions > 0 ? [{ id: 'new', icon: '✦', title: 'Pengajuan baru', text: `${notificationData.newSubmissions} fasilitator ditambahkan bulan ini.`, page: 'fasilitator' }] : []),
     ...(notificationData?.upcomingCount > 0 ? [{ id: 'agenda', icon: '◷', title: 'Agenda mendatang', text: `${notificationData.upcomingCount} kegiatan terdekat menunggu perhatian.`, page: 'pelatihan' }] : []),
-    ...(notificationData?.missing?.photo > 0 ? [{ id: 'photo', icon: '!', title: 'Data belum lengkap', text: `${notificationData.missing.photo} fasilitator belum memiliki foto.`, page: 'monitoring' }] : []),
-    ...(notificationData?.missing?.signature > 0 ? [{ id: 'signature', icon: '!', title: 'TTD belum tersedia', text: `${notificationData.missing.signature} fasilitator belum memiliki TTD.`, page: 'monitoring' }] : []),
+    ...(notificationData?.missing?.photo > 0 ? [{ id: 'photo', icon: '!', title: 'Data belum lengkap', text: `${notificationData.missing.photo} fasilitator belum memiliki foto.`, page: 'fasilitator' }] : []),
+    ...(notificationData?.missing?.signature > 0 ? [{ id: 'signature', icon: '!', title: 'TTD belum tersedia', text: `${notificationData.missing.signature} fasilitator belum memiliki TTD.`, page: 'fasilitator' }] : []),
   ]
   const unreadNotifications = notifications.filter((item) => !readNotificationIds.has(item.id))
   function markNotificationRead(id) {

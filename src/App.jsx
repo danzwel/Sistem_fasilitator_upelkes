@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react'
 import { dashboardData } from './modules/dashboard/data/dashboardData'
 import { getDashboardSummary } from './modules/dashboard/api/dashboardApi'
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage'
-import { MonitoringPage } from './modules/monitoring/pages/MonitoringPage'
-import { SearchPage } from './modules/search/pages/SearchPage'
 import { CompetencyProfilePage } from './modules/competency/pages/CompetencyProfilePage'
 import { AppShell } from './shared/layout/AppShell'
 import { PlaceholderPage } from './shared/pages/PlaceholderPage'
@@ -25,8 +23,6 @@ const pages = {
   'fasilitator-import': { label: 'Import Excel', component: ImportExcelPage },
   pelatihan: { label: 'Pelatihan', component: PelatihanPage },
   'pelatihan-import': { label: 'Import Excel Pelatihan', component: ImportPelatihanExcelPage },
-  monitoring: { label: 'Monitoring', component: MonitoringPage, owner: 'Daniel' },
-  pencarian: { label: 'Cari Fasilitator', component: SearchPage, owner: 'Daniel' },
   kompetensi: { label: 'Profil Kompetensi', component: CompetencyProfilePage, owner: 'Daniel' },
 }
 

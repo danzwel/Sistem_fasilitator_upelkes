@@ -1,4 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
+import { createTraining } from '../../training/api/trainingApi'
+import { trainingCatalog } from '../../training/data/trainingCatalog'
+import { SearchableInput } from '../../../shared/components/SearchableInput'
+import { Modal } from '../../../shared/components/Modal'
 
 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
@@ -25,6 +30,22 @@ export function DashboardPage({ data, onNavigate }) {
   // State for calendar navigation
   const [calMonth, setCalMonth] = useState(today.getMonth())
   const [calYear, setCalYear] = useState(today.getFullYear())
+  const [facilitators, setFacilitators] = useState([])
+  const [agendaOpen, setAgendaOpen] = useState(false)
+  const [agendaSaving, setAgendaSaving] = useState(false)
+  const [agendaError, setAgendaError] = useState('')
+  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', facilitatorId: '', color: '#9f58cc' })
+
+  useEffect(() => { getFacilitators().then(setFacilitators).catch(() => setFacilitators([])) }, [])
+  function openAgenda(day) {
+    const date = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    setAgendaForm({ date, endDate: date, name: '', facilitatorId: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
+  }
+  async function saveAgenda(event) {
+    event.preventDefault(); if (!agendaForm.name || !agendaForm.facilitatorId) return setAgendaError('Nama pelatihan dan fasilitator wajib dipilih.')
+    setAgendaSaving(true); setAgendaError('')
+    try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
+  }
 
   const handlePrevMonth = () => {
     if (calMonth === 0) {
@@ -162,13 +183,16 @@ export function DashboardPage({ data, onNavigate }) {
           <div className="calendar-grid">
             {days.map((item, i) => {
               const isToday = isCurrentMonth && item.day === today.getDate()
+              const cellDate = item.current ? `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(item.day).padStart(2, '0')}` : ''
+              const cellActivities = item.current ? (data.calendarActivities || []).filter((activity) => cellDate >= activity.startDate && cellDate <= activity.endDate) : []
               return (
-                <span
+                <button type="button" onClick={() => item.current && openAgenda(item.day)}
                   className={`${isToday ? 'today' : ''} ${!item.current ? 'outside' : ''}`}
                   key={i}
                 >
                   {item.day}
-                </span>
+                  {cellActivities.length > 0 && <span className="calendar-event-dots">{cellActivities.slice(0, 3).map((activity) => <i key={activity.id} style={{ background: activity.color || '#9f58cc' }} />)}</span>}
+                </button>
               )
             })}
           </div>
@@ -181,31 +205,21 @@ export function DashboardPage({ data, onNavigate }) {
         </section>
       </div>
 
+      <Modal open={agendaOpen} onClose={() => setAgendaOpen(false)} title="Tambah Agenda Pelatihan">
+        <form onSubmit={saveAgenda}>
+          {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
+          <div className="form-grid">
+            <SearchableInput id="agenda-name" label="Nama Pelatihan" value={agendaForm.name} options={trainingCatalog} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value }))} />
+            <SearchableInput id="agenda-facilitator" label="Fasilitator (yang datanya paling lengkap tampil lebih dulu)" value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={[...facilitators].sort((a, b) => Number(b.completeness?.isComplete) - Number(a.completeness?.isComplete)).map((f) => f.name)} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
+            <label className="form-field"><span>Tanggal Mulai</span><input type="date" value={agendaForm.date} onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} required /></label>
+            <label className="form-field"><span>Tanggal Selesai</span><input type="date" value={agendaForm.endDate} onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} required /></label>
+            <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
+        </form>
+      </Modal>
+
       <div className="bottom-grid">
-        <section className="panel">
-          <div className="panel-heading">
-            <div>
-              <p className="eyebrow">MONITORING RINGKAS</p>
-              <h3>Kelengkapan data</h3>
-            </div>
-            <button className="text-button" onClick={() => onNavigate('monitoring')}>
-              Detail monitoring →
-            </button>
-          </div>
-
-          <div className="monitor-list">
-            {data.monitoring.map(item => (
-              <div className="monitor-row" key={item.key}>
-                <span className="monitor-bullet">
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                </span>
-                <span>{item.label}</span>
-                <DisplayValue value={item.value} />
-              </div>
-            ))}
-          </div>
-        </section>
-
         <section className="panel quick-panel">
           <div className="panel-heading">
             <div>
@@ -231,12 +245,6 @@ export function DashboardPage({ data, onNavigate }) {
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
               </span>
               Import Excel
-            </button>
-            <button onClick={() => onNavigate('pencarian')}>
-              <span className="quick-action-icon">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </span>
-              Cari Fasilitator
             </button>
             <button onClick={() => onNavigate('fasilitator')}>
               <span className="quick-action-icon">

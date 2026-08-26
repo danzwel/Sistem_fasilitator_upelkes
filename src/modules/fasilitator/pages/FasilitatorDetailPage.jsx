@@ -95,8 +95,8 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
           <div className="panel" style={{ marginBottom: 18 }}>
             <div className="panel-heading">
               <h3>{facilitator.name}</h3>
-              <span className={`status-badge ${facilitator.status === 'active' ? 'lengkap' : 'belum_lengkap'}`}>
-                {facilitator.status === 'active' ? 'Aktif' : facilitator.status || '-'}
+              <span className={`status-badge ${facilitator.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>
+                {facilitator.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
               </span>
             </div>
             <div className="form-grid">
@@ -167,7 +167,6 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
                 <div key={i} className="activity-row">
                   <div>
                     <div className="table-primary">{c.name}</div>
-                    {c.startedTeachingYear && <div className="table-secondary">sejak {c.startedTeachingYear}</div>}
                   </div>
                 </div>
               ))

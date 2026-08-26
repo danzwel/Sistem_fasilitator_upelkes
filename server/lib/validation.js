@@ -11,7 +11,11 @@ export function validateFacilitator(input) {
 export function validateTraining(input) {
   const errors = {}
   if (!input.name?.trim()) errors.name = 'Nama pelatihan/kegiatan wajib diisi.'
-  if (!input.date || !/^\d{4}(-\d{2}-\d{2})?$/.test(input.date)) errors.date = 'Tanggal wajib berformat YYYY atau YYYY-MM-DD.'
+  const startDate = input.startDate || input.date
+  const endDate = input.endDate || startDate
+  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) errors.date = 'Tanggal mulai wajib berformat YYYY-MM-DD.'
+  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) errors.endDate = 'Tanggal selesai wajib berformat YYYY-MM-DD.'
+  if (!errors.date && !errors.endDate && endDate < startDate) errors.endDate = 'Tanggal selesai tidak boleh sebelum tanggal mulai.'
   if (input.material != null && typeof input.material !== 'string') errors.material = 'Materi harus berupa teks.'
   if (input.subject != null && typeof input.subject !== 'string') errors.subject = 'Subject harus berupa teks.'
   if (input.category && !['related_training', 'teaching_experience'].includes(input.category)) errors.category = 'Kategori riwayat tidak valid.'

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { getTrainings, createTraining, updateTraining, deleteTraining } from '../../training/api/trainingApi'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
-import { trainingCatalog, roleCatalog } from '../../training/data/trainingCatalog'
+import { trainingCatalog } from '../../training/data/trainingCatalog'
+import { CertificateSection } from './CertificateSection'
 
 // title: judul panel
 // category: 'related_training' | 'teaching_experience'
@@ -9,7 +10,7 @@ import { trainingCatalog, roleCatalog } from '../../training/data/trainingCatalo
 
 const emptyForm = { name: '', material: '', date: '', organizer: '', role: '' }
 
-export function TrainingSection({ facilitatorId, title, category, showRole }) {
+export function TrainingSection({ facilitatorId, title, category, showRole, includeCertificates = false }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -71,10 +72,6 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
       setFormError('Pilih nama pelatihan dari daftar yang tersedia.')
       return
     }
-    if (showRole && form.role && !roleCatalog.includes(form.role.trim())) {
-      setFormError('Pilih peran dari daftar yang tersedia.')
-      return
-    }
     const payload = {
       name: form.name.trim(),
       material: form.material.trim(),
@@ -134,7 +131,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
               <span>Materi / Mata Pelatihan</span>
               <input type="text" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
             </label>
-            {showRole && <SearchableInput id={`facilitator-training-role-${category}`} label="Peran" value={form.role} options={roleCatalog} placeholder="Ketik untuk mencari peran..." onChange={(value) => setForm((p) => ({ ...p, role: value }))} />}
+            {showRole && <label className="form-field"><span>Peran</span><input value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))} placeholder="Narasumber / Fasilitator" /></label>}
             <label className="form-field">
               <span>Penyelenggara</span>
               <input type="text" value={form.organizer} onChange={(e) => setForm((p) => ({ ...p, organizer: e.target.value }))} />
@@ -152,6 +149,8 @@ export function TrainingSection({ facilitatorId, title, category, showRole }) {
           </div>
         </form>
       )}
+
+      {includeCertificates && <CertificateSection facilitatorId={facilitatorId} embedded />}
 
       {loading ? (
         <div className="empty-state"><span>◌</span><p>Memuat...</p></div>

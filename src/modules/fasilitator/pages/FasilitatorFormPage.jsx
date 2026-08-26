@@ -6,7 +6,6 @@ import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { EducationSection } from '../components/EducationSection'
 import { CompetencySection } from '../components/CompetencySection'
 import { TrainingSection } from '../components/TrainingSection'
-import { CertificateSection } from '../components/CertificateSection'
 
 const EMPTY_FORM = {
   nama: '', gelar: '', tempatLahir: '', tanggalLahir: '', nik: '', nip: '',
@@ -216,12 +215,12 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
       {isEdit && (
         <>
           <EducationSection facilitatorId={facilitatorId} />
-          <CertificateSection facilitatorId={facilitatorId} />
           <TrainingSection
             facilitatorId={facilitatorId}
             title="Pendidikan/Pelatihan yang Terkait Materi"
             category="related_training"
             showRole={false}
+            includeCertificates
           />
           <TrainingSection
             facilitatorId={facilitatorId}

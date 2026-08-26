@@ -112,7 +112,7 @@ export function FasilitatorPage({ onNavigate }) {
                 <th>Nama</th>
                 <th>Jabatan / Unit Kerja</th>
                 <th>Kontak</th>
-                <th>Status</th>
+                <th>Kelengkapan Data</th>
                 <th aria-label="Aksi"></th>
               </tr>
             </thead>
@@ -152,8 +152,8 @@ export function FasilitatorPage({ onNavigate }) {
                     <div className="table-secondary">{f.email || '-'}</div>
                   </td>
                   <td>
-                    <span className={`status-badge ${f.status === 'active' ? 'lengkap' : 'belum_lengkap'}`}>
-                      {f.status === 'active' ? 'Aktif' : f.status || '-'}
+                    <span className={`status-badge ${f.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>
+                      {f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
                     </span>
                   </td>
                   <td>
