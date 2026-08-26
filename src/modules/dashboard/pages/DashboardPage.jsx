@@ -46,6 +46,13 @@ export function DashboardPage({ data, onNavigate }) {
     setAgendaSaving(true); setAgendaError('')
     try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
   }
+  function recommendedFacilitators() {
+    const words = agendaForm.name.toLowerCase().split(/\W+/).filter((word) => word.length > 3)
+    return [...facilitators].sort((a, b) => {
+      const score = (person) => { const text = (person.competencies || []).map((item) => item.name).join(' ').toLowerCase(); return Number(person.completeness?.isComplete) * 100 + words.filter((word) => text.includes(word)).length * 10 }
+      return score(b) - score(a) || a.name.localeCompare(b.name)
+    })
+  }
 
   const handlePrevMonth = () => {
     if (calMonth === 0) {
@@ -191,7 +198,7 @@ export function DashboardPage({ data, onNavigate }) {
                   key={i}
                 >
                   {item.day}
-                  {cellActivities.length > 0 && <span className="calendar-event-dots">{cellActivities.slice(0, 3).map((activity) => <i key={activity.id} style={{ background: activity.color || '#9f58cc' }} />)}</span>}
+                  {cellActivities.length > 0 && <span className="calendar-event-bars">{cellActivities.map((activity) => <i key={activity.id} style={{ background: activity.color || '#9f58cc' }} title={activity.name} />)}</span>}
                 </button>
               )
             })}
@@ -210,7 +217,7 @@ export function DashboardPage({ data, onNavigate }) {
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
             <SearchableInput id="agenda-name" label="Nama Pelatihan" value={agendaForm.name} options={trainingCatalog} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value }))} />
-            <SearchableInput id="agenda-facilitator" label="Fasilitator (yang datanya paling lengkap tampil lebih dulu)" value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={[...facilitators].sort((a, b) => Number(b.completeness?.isComplete) - Number(a.completeness?.isComplete)).map((f) => f.name)} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
+            <SearchableInput id="agenda-facilitator" label="Fasilitator (rekomendasi berdasarkan kompetensi & kelengkapan)" value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={recommendedFacilitators().map((f) => f.name)} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
             <label className="form-field"><span>Tanggal Mulai</span><input type="date" value={agendaForm.date} onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} required /></label>
             <label className="form-field"><span>Tanggal Selesai</span><input type="date" value={agendaForm.endDate} onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} required /></label>
             <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
