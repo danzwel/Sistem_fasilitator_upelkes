@@ -13,13 +13,15 @@ export function validateTraining(input) {
   if (!input.name?.trim()) errors.name = 'Nama pelatihan/kegiatan wajib diisi.'
   const startDate = input.startDate || input.date
   const endDate = input.endDate || startDate
-  if (!startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) errors.date = 'Tanggal mulai wajib berformat YYYY-MM-DD.'
-  if (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) errors.endDate = 'Tanggal selesai wajib berformat YYYY-MM-DD.'
+  if (startDate && !/^\d{4}(-\d{2}-\d{2})?$/.test(startDate)) errors.date = 'Tanggal mulai harus berformat YYYY atau YYYY-MM-DD.'
+  if (input.endDate && !/^\d{4}(-\d{2}-\d{2})?$/.test(input.endDate)) errors.endDate = 'Tanggal selesai harus berformat YYYY atau YYYY-MM-DD.'
   if (!errors.date && !errors.endDate && endDate < startDate) errors.endDate = 'Tanggal selesai tidak boleh sebelum tanggal mulai.'
   if (input.category === 'related_training') {
     if (!input.material?.trim()) errors.material = 'Materi wajib diisi untuk pelatihan terkait materi.'
     if (!input.organizer?.trim()) errors.organizer = 'Penyelenggara wajib diisi untuk pelatihan terkait materi.'
   }
+  if (input.participantCount != null && (!Number.isInteger(input.participantCount) || input.participantCount < 0)) errors.participantCount = 'Jumlah peserta harus berupa angka positif.'
+  if (input.rating != null && (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5)) errors.rating = 'Rating harus bernilai 1 sampai 5.'
   if (input.material != null && typeof input.material !== 'string') errors.material = 'Materi harus berupa teks.'
   if (input.subject != null && typeof input.subject !== 'string') errors.subject = 'Subject harus berupa teks.'
   if (input.category && !['related_training', 'teaching_experience'].includes(input.category)) errors.category = 'Kategori riwayat tidak valid.'

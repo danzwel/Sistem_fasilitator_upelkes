@@ -3,6 +3,7 @@ import { facilitatorEvaluationApi } from '../../monitoring/api/facilitatorEvalua
 import { ApiError, Empty, Loading } from '../../monitoring/pages/MonitoringPage'
 import { Avatar } from '../../search/pages/SearchPage'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 export function CompetencyProfilePage({ selectedFacilitatorId, onNavigate }) {
   const [state, setState] = useState({ loading: false, error: '', data: null })
@@ -12,7 +13,7 @@ export function CompetencyProfilePage({ selectedFacilitatorId, onNavigate }) {
   if (state.loading) return <Loading text="Memuat profil kompetensi..." />
   if (state.error) return <ApiError message={state.error} />
   if (!state.data) return null
-  const person = state.data
+  const person = { ...state.data, name: formatFacilitatorName(state.data), degree: '' }
   const certificateItems = person.certificates?.length ? person.certificates : (person.documents?.Sertifikat ? [{ id: 'latest-certificate', name: 'Sertifikat', url: person.documents.Sertifikat }] : [])
   return <section className="module-page page-enter">
     <div className="module-banner">

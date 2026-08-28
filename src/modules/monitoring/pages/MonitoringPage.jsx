@@ -42,7 +42,7 @@ function MonitoringRow({ record, onSelect, onNavigate }) {
     <td>
       <div style={{ display: 'flex', gap: 10 }}>
         <button className="text-button" onClick={() => onSelect(record.id)}>Profil →</button>
-        <button className="text-button" onClick={() => onNavigate?.('fasilitator-edit', record.id)}>Edit</button>
+        <button className="text-button" onClick={() => onNavigate?.('fasilitator-edit', record.id, 'monitoring')}>Edit</button>
       </div>
     </td>
   </tr>

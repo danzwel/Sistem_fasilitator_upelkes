@@ -46,6 +46,10 @@ export function uploadFacilitatorPhoto(facilitatorId, file) {
 export function uploadFacilitatorSignature(facilitatorId, file) {
   return uploadFile(`/facilitators/${facilitatorId}/signature`, file)
 }
+export function uploadFacilitatorSupporting(facilitatorId, file, name = 'Dokumen Pendukung') {
+  const formData = new FormData(); formData.append('file', file); formData.append('name', name)
+  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/supporting`, { method: 'POST', body: formData }).then(async (response) => { const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || `Upload gagal (${response.status})`); return body.data ?? body })
+}
 
 export async function getFacilitatorCertificates(facilitatorId) {
   const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`)

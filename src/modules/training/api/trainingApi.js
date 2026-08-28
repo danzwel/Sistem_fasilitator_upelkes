@@ -44,3 +44,15 @@ export function deleteTraining(facilitatorId, trainingId) {
     method: 'DELETE',
   })
 }
+
+export function getTrainingSubjects() {
+  return request('/training-subjects')
+}
+
+export function createTrainingSubject(name) {
+  return request('/training-subjects', { method: 'POST', body: JSON.stringify({ name }) })
+}
+
+export function createTrainingReview(facilitatorId, trainingId, payload) {
+  return request(`/facilitators/${facilitatorId}/trainings/${trainingId}/rating`, { method: 'POST', body: JSON.stringify(payload) })
+}

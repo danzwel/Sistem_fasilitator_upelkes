@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react'
 import { getTrainings, createTraining, updateTraining, deleteTraining } from '../../training/api/trainingApi'
-import { SearchableInput } from '../../../shared/components/SearchableInput'
-import { trainingCatalog } from '../../training/data/trainingCatalog'
 import { uploadTrainingCertificate } from '../api/facilitatorUploadApi'
 
 // title: judul panel
 // category: 'related_training' | 'teaching_experience'
 // showRole: true untuk "Pengalaman Melatih/Mengajar" (ada kolom Peran)
 
-const emptyForm = { name: '', material: '', date: '', organizer: '', role: '', certificateUrl: '' }
+const emptyForm = { name: '', material: '', date: '', startDate: '', endDate: '', organizer: '', role: '', participantCount: '', certificateUrl: '' }
+
+function formatTrainingDate(start, end) {
+  const first = start || ''
+  const last = end || first
+  if (!first) return ''
+  return first === last ? first : `${first} – ${last}`
+}
 
 export function TrainingSection({ facilitatorId, title, category, showRole, includeCertificates = false }) {
   const [items, setItems] = useState([])
@@ -50,8 +55,11 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
       name: item.name ?? '',
       material: item.material ?? '',
       date: item.date ?? '',
+      startDate: item.startDate ?? item.date ?? '',
+      endDate: item.endDate ?? item.date ?? '',
       organizer: item.organizer ?? '',
       role: item.role ?? '',
+      participantCount: item.participantCount ?? '',
       certificateUrl: item.certificateUrl ?? '',
     })
     setFormError(null)
@@ -74,15 +82,19 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
     if (category === 'related_training' && !form.material.trim()) return setFormError('Materi wajib diisi.')
     if (category === 'related_training' && !form.organizer.trim()) return setFormError('Penyelenggara wajib diisi.')
     if (category === 'related_training' && !form.date) return setFormError('Tanggal wajib diisi.')
+    if (showRole && !form.startDate) return setFormError('Tanggal mulai wajib diisi.')
+    if (showRole && !form.endDate) return setFormError('Tanggal selesai wajib diisi.')
+    if (showRole && form.endDate < form.startDate) return setFormError('Tanggal selesai tidak boleh sebelum tanggal mulai.')
     if (category === 'related_training' && !form.certificateUrl && !certificateFile) return setFormError('Sertifikat pelatihan wajib diunggah.')
-    if (!trainingCatalog.includes(form.name.trim()) && !editingId) {
-      setFormError('Pilih nama pelatihan dari daftar yang tersedia.')
-      return
-    }
     const payload = {
       name: form.name.trim(),
       material: form.material.trim(),
-      date: form.date.trim(),
+      date: (showRole ? form.startDate : form.date).trim(),
+      ...(showRole ? {
+        startDate: form.startDate,
+        endDate: form.endDate,
+        participantCount: form.participantCount === '' ? null : Number(form.participantCount),
+      } : {}),
       organizer: form.organizer.trim(),
       category,
       ...(showRole ? { role: form.role.trim() } : {}),
@@ -135,7 +147,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
         >
           {formError && <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{formError}</div>}
           <div className="form-grid">
-            <SearchableInput id={`facilitator-training-name-${category}`} label={<>Nama {showRole ? 'Pelatihan/Kegiatan' : 'Pendidikan/Pelatihan'} <span className="required-mark">*</span></>} value={form.name} options={trainingCatalog} placeholder="Ketik untuk mencari nama pelatihan..." required onChange={(value) => setForm((p) => ({ ...p, name: value }))} />
+            <label className="form-field"><span>Nama {showRole ? 'Pelatihan/Kegiatan' : 'Pendidikan/Pelatihan'} <span className="required-mark">*</span></span><input value={form.name} placeholder="Ketik nama pelatihan..." required onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} /></label>
             <label className="form-field">
               <span>Materi / Mata Pelatihan</span>
               <input type="text" value={form.material} required={category === 'related_training'} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value }))} placeholder="Komunikasi Efektif" />
@@ -145,10 +157,11 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
               <span>Penyelenggara</span>
               <input type="text" value={form.organizer} required={category === 'related_training'} onChange={(e) => setForm((p) => ({ ...p, organizer: e.target.value }))} />
             </label>
-            <label className="form-field">
-              <span>Tanggal</span>
-              <input type="date" value={form.date} required={category === 'related_training'} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} />
-            </label>
+            {showRole ? <>
+              <label className="form-field"><span>Tanggal Mulai <span className="required-mark">*</span></span><input type="date" value={form.startDate} required onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))} /></label>
+              <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={form.endDate} required onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} /></label>
+              <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={form.participantCount} onChange={(e) => setForm((p) => ({ ...p, participantCount: e.target.value }))} /></label>
+            </> : <label className="form-field"><span>Tanggal</span><input type="date" value={form.date} required={category === 'related_training'} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} /></label>}
             {includeCertificates && <label className="form-field"><span>Sertifikat Pelatihan <span className="required-mark">*</span></span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required={!form.certificateUrl} onChange={(e) => setCertificateFile(e.target.files?.[0] || null)} />{form.certificateUrl && <a href={form.certificateUrl} target="_blank" rel="noreferrer">Sertifikat tersimpan — buka file</a>}<small className="muted">Wajib untuk pelatihan terkait materi.</small></label>}
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
@@ -174,7 +187,9 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
                 <div className="table-primary">{item.name}</div>
                 {item.material && <div className="table-secondary" style={{ fontStyle: 'italic' }}>{item.material}</div>}
                 <div className="table-secondary">
-                {[showRole ? item.role : null, item.organizer, item.date].filter(Boolean).join(' · ')}{item.certificateUrl && <div><a href={item.certificateUrl} target="_blank" rel="noreferrer">Buka sertifikat</a></div>}
+                {[showRole ? item.role : null, item.organizer, formatTrainingDate(showRole ? item.startDate : item.date, showRole ? item.endDate : item.date)].filter(Boolean).join(' · ')}
+                {showRole && item.participantCount != null && <div>{item.participantCount} peserta</div>}
+                {item.certificateUrl && <div><a href={item.certificateUrl} target="_blank" rel="noreferrer">Buka sertifikat</a></div>}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
