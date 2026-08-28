@@ -3,6 +3,7 @@ import { getFacilitatorById } from '../api/facilitatorApi'
 import { getEducations } from '../api/educationApi'
 import { getTrainings } from '../../training/api/trainingApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
@@ -75,14 +76,13 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
     <section className="page-enter">
       <div className="welcome-row">
         <div>
-          <p className="eyebrow">MODUL SOFI</p>
           <h2>Detail Fasilitator</h2>
           <p className="muted">Informasi lengkap fasilitator (read-only).</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="outline-button" onClick={() => onNavigate?.('fasilitator')}>← Kembali</button>
           <button className="outline-button" onClick={() => onNavigate?.('fasilitator-cv', facilitatorId)}>Lihat CV</button>
-          <button className="primary-button" onClick={() => onNavigate?.('fasilitator-edit', facilitatorId)}>Edit</button>
+          <button className="primary-button" onClick={() => onNavigate?.('fasilitator-edit', facilitatorId, 'fasilitator-detail')}>Edit</button>
         </div>
       </div>
 
@@ -94,13 +94,13 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
         <>
           <div className="panel" style={{ marginBottom: 18 }}>
             <div className="panel-heading">
-              <h3>{facilitator.name}</h3>
+              <h3>{formatFacilitatorName(facilitator)}</h3>
               <span className={`status-badge ${facilitator.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>
                 {facilitator.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
               </span>
+              <span className="profile-rating">★ {facilitator.rating?.average ?? '—'} <span>({facilitator.rating?.count ?? 0} ulasan)</span></span>
             </div>
             <div className="form-grid">
-              <Field label="Gelar" value={facilitator.degree} />
               <Field label="Tempat/Tanggal Lahir" value={facilitator.birthInfo} />
               <Field label="NIK" value={facilitator.nik} />
               <Field label="NIP" value={facilitator.nip} />

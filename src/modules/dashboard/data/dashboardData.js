@@ -10,6 +10,7 @@ export const dashboardData = {
     { key: 'thisMonth', label: 'Kegiatan Bulan Ini', value: null, tone: 'cyan', icon: '◷' },
   ],
   upcomingActivities: [],
+  allActivities: [],
   calendarActivities: [],
   monitoring: [
     { key: 'photo', label: 'Belum memiliki foto', value: null },

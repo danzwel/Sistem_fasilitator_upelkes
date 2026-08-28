@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useRef } from 'react'
-import { getFacilitatorById, createFacilitator, updateFacilitator } from '../api/facilitatorApi'
-import { uploadFacilitatorPhoto, uploadFacilitatorSignature } from '../api/facilitatorUploadApi'
+import { getFacilitatorById, getFacilitators, createFacilitator, updateFacilitator } from '../api/facilitatorApi'
+import { uploadFacilitatorPhoto, uploadFacilitatorSignature, uploadFacilitatorSupporting } from '../api/facilitatorUploadApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { EducationSection } from '../components/EducationSection'
 import { CompetencySection } from '../components/CompetencySection'
 import { TrainingSection } from '../components/TrainingSection'
+import { getTrainingSubjects } from '../../training/api/trainingApi'
 
 const EMPTY_FORM = {
   nama: '', gelar: '', tempatLahir: '', tanggalLahir: '', nik: '', nip: '',
@@ -56,11 +57,12 @@ function FileSlot({ label, previewUrl, onSelect }) {
   )
 }
 
-export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
+export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fasilitator' }) {
   const isEdit = Boolean(facilitatorId)
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [competencies, setCompetencies] = useState([])
+  const [globalCompetencies, setGlobalCompetencies] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
@@ -69,8 +71,16 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
 
   const [photoFile, setPhotoFile] = useState(null)
   const [signatureFile, setSignatureFile] = useState(null)
+  const [supportingFile, setSupportingFile] = useState(null)
+  const [supportingDocuments, setSupportingDocuments] = useState([])
   const [existingPhotoUrl, setExistingPhotoUrl] = useState(null)
   const [existingSignatureUrl, setExistingSignatureUrl] = useState(null)
+
+  useEffect(() => {
+    Promise.all([getFacilitators(), getTrainingSubjects()])
+      .then(([facilitators, subjects]) => setGlobalCompetencies([...new Set([...subjects, ...facilitators.flatMap((item) => (item.competencies || []).map((competency) => competency.name).filter(Boolean))])]))
+      .catch(() => setGlobalCompetencies([]))
+  }, [facilitatorId])
 
   useEffect(() => {
     if (!isEdit) return
@@ -85,6 +95,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
         setCompetencies(f.competencies ?? [])
         setExistingPhotoUrl(f.photoUrl ?? null)
         setExistingSignatureUrl(f.signatureUrl ?? null)
+        setSupportingDocuments(f.supportingDocuments ?? [])
       })
       .catch((err) => setSubmitError(err.message))
       .finally(() => setLoading(false))
@@ -145,6 +156,11 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
         try { await uploadFacilitatorSignature(savedId, signatureFile) }
         catch (err) { uploadWarnings.push(`TTD gagal diunggah: ${err.message}`) }
       }
+      if (supportingFile) {
+        setSubmitStep('Mengunggah dokumen pendukung...')
+        try { await uploadFacilitatorSupporting(savedId, supportingFile) }
+        catch (err) { uploadWarnings.push(`Dokumen pendukung gagal diunggah: ${err.message}`) }
+      }
 
       if (uploadWarnings.length > 0) {
         setSubmitError(`Biodata tersimpan, tapi ada masalah: ${uploadWarnings.join(' ')} Kamu bisa unggah ulang dari sini.`)
@@ -169,11 +185,10 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
     <section className="page-enter">
       <div className="welcome-row">
         <div>
-          <p className="eyebrow">MODUL SOFI</p>
           <h2>{isEdit ? 'Edit Fasilitator' : 'Tambah Fasilitator'}</h2>
           <p className="muted">Isi biodata, foto, TTD, materi, riwayat pendidikan, dan pengalaman mengajar.</p>
         </div>
-        <button className="outline-button" onClick={() => onNavigate?.(isEdit ? 'fasilitator-detail' : 'fasilitator', facilitatorId)}>
+        <button className="outline-button" onClick={() => onNavigate?.(isEdit ? returnTo : 'fasilitator', facilitatorId)}>
           ← Kembali
         </button>
       </div>
@@ -208,9 +223,14 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId }) {
             <FileSlot label="TTD" previewUrl={signatureFile ? URL.createObjectURL(signatureFile) : resolveAssetUrl(existingSignatureUrl)} onSelect={setSignatureFile} />
           </div>
         </div>
+        <div className="panel" style={{ marginBottom: 18 }}>
+          <div className="panel-heading"><h3>Dokumen Pendukung</h3></div>
+          {supportingDocuments.map((document) => <div key={document.id} className="table-secondary"><a href={resolveAssetUrl(document.url)} target="_blank" rel="noreferrer">{document.name || 'Buka dokumen pendukung'}</a></div>)}
+          <label className="form-field"><span>Tambah Dokumen Pendukung</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(event) => setSupportingFile(event.target.files?.[0] ?? null)} /><small className="muted">Contoh: SK, KTP, atau dokumen kepegawaian.</small></label>
+        </div>
       </form>
 
-      <CompetencySection value={competencies} onChange={setCompetencies} />
+      <CompetencySection value={competencies} onChange={setCompetencies} catalog={globalCompetencies} />
 
       {isEdit && (
         <>

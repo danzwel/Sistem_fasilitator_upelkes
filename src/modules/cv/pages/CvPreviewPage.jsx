@@ -5,6 +5,7 @@ import { getFacilitatorById } from '../../fasilitator/api/facilitatorApi'
 import { getEducations } from '../../fasilitator/api/educationApi'
 import { getTrainings } from '../../training/api/trainingApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
+import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
@@ -128,7 +129,6 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
     <section className="page-enter">
       <div className="welcome-row no-print">
         <div>
-          <p className="eyebrow">MODUL SOFI</p>
           <h2>Preview CV</h2>
           <p className="muted">Cek dulu tampilannya, baru export ke PDF.</p>
         </div>
@@ -151,7 +151,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           )}
         </div>
 
-        <h1 className="cv-name">{facilitator.name}</h1>
+        <h1 className="cv-name">{formatFacilitatorName(facilitator)}</h1>
 
         <table className="cv-bio-table">
           <tbody>
@@ -232,7 +232,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           ) : (
             <div className="cv-signature-placeholder">(TTD belum diunggah)</div>
           )}
-          <p className="cv-signature-name"><strong>{facilitator.name}</strong></p>
+              <p className="cv-signature-name"><strong>{formatFacilitatorName(facilitator)}</strong></p>
         </div>
       </div>
     </section>

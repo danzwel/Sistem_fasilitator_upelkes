@@ -3,6 +3,7 @@ import { getFacilitators, deleteFacilitator } from '../api/facilitatorApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { FacilitatorDetailModal } from '../components/FacilitatorDetailModal'
 import { Modal } from '../../../shared/components/Modal'
+import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 const completenessLabels = { photo: 'Foto', signature: 'TTD', certificate: 'Sertifikat', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
 
@@ -48,12 +49,12 @@ export function FasilitatorPage({ onNavigate }) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return facilitators
-    return facilitators.filter((f) =>
+    const list = !q ? facilitators : facilitators.filter((f) =>
       [f.name, f.position, f.unit, f.nik, f.nip]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q))
     )
+    return [...list].sort(compareRecommendedFacilitators)
   }, [facilitators, query])
   const completenessPerson = completenessId ? facilitators.find((f) => f.id === completenessId) : null
   const missingItems = completenessPerson ? Object.entries(completenessPerson.completeness?.checks || {}).filter(([, value]) => !value).map(([key]) => completenessLabels[key] || key) : []
@@ -62,7 +63,6 @@ export function FasilitatorPage({ onNavigate }) {
     <section className="page-enter">
       <div className="fasilitator-banner">
         <div className="fasilitator-banner-content">
-          <p className="eyebrow">MODUL SOFI</p>
           <h2>Data Fasilitator</h2>
           <p className="muted">Kelola biodata, foto, TTD, dan kelengkapan data fasilitator UPELKES.</p>
         </div>
@@ -147,7 +147,7 @@ export function FasilitatorPage({ onNavigate }) {
                   </td>
                   <td>
                     <div className="table-primary">{f.name || '-'}</div>
-                    {f.degree && <div className="table-secondary">{f.degree}</div>}
+                    <div className="table-secondary">{formatFacilitatorName(f)}</div>
                   </td>
                   <td>
                     <div className="table-primary">{f.position || '-'}</div>
@@ -167,7 +167,7 @@ export function FasilitatorPage({ onNavigate }) {
                       <button className="text-button" onClick={() => setDetailId(f.id)}>
                         Detail
                       </button>
-                      <button className="text-button" onClick={() => onNavigate?.('fasilitator-edit', f.id)}>
+                      <button className="text-button" onClick={() => onNavigate?.('fasilitator-edit', f.id, 'fasilitator')}>
                         Edit
                       </button>
                       <button

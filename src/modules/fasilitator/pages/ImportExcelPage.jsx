@@ -190,7 +190,6 @@ export function ImportExcelPage({ onNavigate }) {
     <section className="page-enter">
       <div className="welcome-row">
         <div>
-          <p className="eyebrow">MODUL SOFI</p>
           <h2>Import Excel</h2>
           <p className="muted">Upload file, cek dulu hasil validasinya, baru konfirmasi import.</p>
         </div>

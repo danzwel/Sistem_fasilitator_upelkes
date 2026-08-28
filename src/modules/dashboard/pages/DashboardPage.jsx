@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
-import { createTraining } from '../../training/api/trainingApi'
+import { createTraining, createTrainingReview } from '../../training/api/trainingApi'
 import { trainingCatalog } from '../../training/data/trainingCatalog'
+import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { Modal } from '../../../shared/components/Modal'
+import { getDashboardSummary } from '../api/dashboardApi'
 
 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
@@ -45,24 +47,25 @@ export function DashboardPage({ data, onNavigate }) {
   const [agendaSaving, setAgendaSaving] = useState(false)
   const [agendaError, setAgendaError] = useState('')
   const [selectedAgenda, setSelectedAgenda] = useState(null)
-  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', facilitatorId: '', color: '#9f58cc' })
+  const [allAgendaOpen, setAllAgendaOpen] = useState(false)
+  const [selectedStat, setSelectedStat] = useState(null)
+  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', color: '#9f58cc' })
 
   useEffect(() => { getFacilitators().then(setFacilitators).catch(() => setFacilitators([])) }, [])
   function openAgenda(day) {
     const date = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    setAgendaForm({ date, endDate: date, name: '', facilitatorId: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
+    setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
   }
   async function saveAgenda(event) {
     event.preventDefault(); if (!agendaForm.name || !agendaForm.facilitatorId) return setAgendaError('Nama pelatihan dan fasilitator wajib dipilih.')
     setAgendaSaving(true); setAgendaError('')
-    try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
+    try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, material: agendaForm.material, organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
   }
   function recommendedFacilitators() {
     const words = agendaForm.name.toLowerCase().split(/\W+/).filter((word) => word.length > 3)
-    return [...facilitators].sort((a, b) => {
-      const score = (person) => { const text = (person.competencies || []).map((item) => item.name).join(' ').toLowerCase(); return Number(person.completeness?.isComplete) * 100 + words.filter((word) => text.includes(word)).length * 10 }
-      return score(b) - score(a) || a.name.localeCompare(b.name)
-    })
+    return [...facilitators].sort((a, b) => compareRecommendedFacilitators(a, b)
+      || words.filter((word) => (b.competencies || []).some((item) => item.name.toLowerCase().includes(word))).length
+      - words.filter((word) => (a.competencies || []).some((item) => item.name.toLowerCase().includes(word))).length)
   }
 
   const handlePrevMonth = () => {
@@ -117,7 +120,6 @@ export function DashboardPage({ data, onNavigate }) {
     <div className="dashboard page-enter">
       <div className="welcome-row">
         <div>
-          <p className="eyebrow">RINGKASAN ADMINISTRASI</p>
           <h2>Selamat datang, Admin <span>✦</span></h2>
           <p className="muted">Pantau data fasilitator dan kegiatan UPELKES dalam satu tempat.</p>
         </div>
@@ -129,11 +131,11 @@ export function DashboardPage({ data, onNavigate }) {
         </div>
       </div>
 
-      <WelcomeTrainingBanner activities={data.upcomingActivities} />
+      <WelcomeTrainingBanner activities={data.allActivities || data.upcomingActivities} />
 
       <section className="stats-grid">
         {data.stats.map(stat => (
-          <article className={`stat-card ${stat.tone}`} key={stat.key}>
+          <button type="button" className={`stat-card ${stat.tone}`} key={stat.key} onClick={() => setSelectedStat(stat)}>
             <div className="stat-top">
               <span className="stat-icon">
                 {statIcons[stat.key] || <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -142,7 +144,7 @@ export function DashboardPage({ data, onNavigate }) {
             </div>
             <p>{stat.label}</p>
             <DisplayValue value={stat.value} />
-          </article>
+          </button>
         ))}
       </section>
 
@@ -153,24 +155,26 @@ export function DashboardPage({ data, onNavigate }) {
               <p className="eyebrow">AGENDA</p>
               <h3>Pengingat kegiatan</h3>
             </div>
-            <button className="text-button" onClick={() => onNavigate('pelatihan')}>
+            <button className="text-button" onClick={() => setAllAgendaOpen(true)}>
               Lihat semua →
             </button>
           </div>
 
           {data.upcomingActivities.length > 0 ? (
-            data.upcomingActivities.map(item => (
-              <div className="activity-row agenda-row" key={item.id} role="button" tabIndex={0} onClick={() => setSelectedAgenda(item)} onKeyDown={(event) => event.key === 'Enter' && setSelectedAgenda(item)}>
-                <div className="date-box agenda-date-box" style={{ '--agenda-color': item.color || '#bf68f5' }}>
-                  <b>{formatAgendaDate(item.startDate || item.date, item.endDate).day}</b>
-                  <span>{formatAgendaDate(item.startDate || item.date, item.endDate).month}</span>
+            <div className="agenda-list">
+              {data.upcomingActivities.map(item => (
+                <div className="activity-row agenda-row" key={item.id} role="button" tabIndex={0} onClick={() => setSelectedAgenda(item)} onKeyDown={(event) => event.key === 'Enter' && setSelectedAgenda(item)}>
+                  <div className="date-box agenda-date-box" style={{ '--agenda-color': item.color || '#bf68f5' }}>
+                    <b>{formatAgendaDate(item.startDate || item.date, item.endDate).day}</b>
+                    <span>{formatAgendaDate(item.startDate || item.date, item.endDate).month}</span>
+                  </div>
+                  <div className="agenda-content">
+                    <b>{item.name}</b>
+                    <p>{item.facilitator} · {item.organizer || 'Terjadwal'}</p>
+                  </div>
                 </div>
-                <div>
-                  <b>{item.name}</b>
-                  <p>{item.facilitator} · {item.organizer || 'Terjadwal'}</p>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <EmptyState text="Belum ada kegiatan terdekat." />
           )}
@@ -223,14 +227,20 @@ export function DashboardPage({ data, onNavigate }) {
         </section>
       </div>
 
+      <AllAgendaModal activities={data.allActivities || []} open={allAgendaOpen} onClose={() => setAllAgendaOpen(false)} />
+      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} />
+
       <Modal open={agendaOpen} onClose={() => setAgendaOpen(false)} title="Tambah Agenda Pelatihan">
         <form onSubmit={saveAgenda}>
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
             <SearchableInput id="agenda-name" label="Nama Pelatihan" value={agendaForm.name} options={trainingCatalog} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value }))} />
             <SearchableInput id="agenda-facilitator" label="Fasilitator (rekomendasi berdasarkan kompetensi & kelengkapan)" value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={recommendedFacilitators().map((f) => f.name)} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
+            <label className="form-field"><span>Materi / Mata Pelatihan</span><input value={agendaForm.material} onChange={(e) => setAgendaForm((form) => ({ ...form, material: e.target.value }))} placeholder="Komunikasi Efektif" /></label>
+            <label className="form-field"><span>Penyelenggara</span><input value={agendaForm.organizer} onChange={(e) => setAgendaForm((form) => ({ ...form, organizer: e.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Mulai</span><input type="date" value={agendaForm.date} onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} required /></label>
             <label className="form-field"><span>Tanggal Selesai</span><input type="date" value={agendaForm.endDate} onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} required /></label>
+            <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={agendaForm.participantCount} onChange={(e) => setAgendaForm((form) => ({ ...form, participantCount: e.target.value }))} /></label>
             <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
@@ -290,6 +300,90 @@ export function DashboardPage({ data, onNavigate }) {
   )
 }
 
+function AllAgendaModal({ activities, open, onClose }) {
+  const [items, setItems] = useState(activities)
+  const [filter, setFilter] = useState('all')
+  const [ratingActivity, setRatingActivity] = useState(null)
+  const [rating, setRating] = useState('5')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const today = new Date().toISOString().slice(0, 10)
+  useEffect(() => { setItems(activities) }, [activities])
+  useEffect(() => {
+    if (!open) return
+    getDashboardSummary().then((summary) => setItems(summary.allActivities || [])).catch(() => setItems(activities))
+  }, [open])
+  const getStatus = (activity) => {
+    if ((activity.endDate || activity.startDate) < today) return ['finished', 'Selesai']
+    if ((activity.startDate || '') > today) return ['upcoming', 'Akan Datang']
+    return ['ongoing', 'Sedang Berlangsung']
+  }
+  const visible = items.filter((activity) => filter === 'all' || getStatus(activity)[0] === filter)
+  async function saveRating(event) {
+    event.preventDefault(); setSaving(true); setError('')
+    try {
+      await createTrainingReview(ratingActivity.facilitatorId, ratingActivity.id, { rating: Number(rating) })
+      setItems((current) => current.map((activity) => activity.id === ratingActivity.id && activity.facilitatorId === ratingActivity.facilitatorId ? { ...activity, reviewCount: 1 } : activity))
+      setRatingActivity(null)
+    } catch (saveError) { setError(saveError.message) } finally { setSaving(false) }
+  }
+  return <Modal open={open} onClose={() => !saving && onClose()} title="Semua Agenda Kegiatan">
+    <div className="all-agenda-modal">
+      <div className="all-agenda-summary"><span>Seluruh kegiatan fasilitator</span><strong>{visible.length} kegiatan</strong></div>
+      <div className="filter-tabs all-agenda-filters">{[['all', 'Semua'], ['finished', 'Selesai'], ['ongoing', 'Berlangsung'], ['upcoming', 'Akan Datang']].map(([key, label]) => <button type="button" key={key} className={filter === key ? 'selected' : ''} onClick={() => setFilter(key)}>{label}</button>)}</div>
+      {visible.length === 0 ? <div className="empty-state"><p>Belum ada agenda pada status ini.</p></div> : <div className="all-agenda-list">{visible.map((activity) => { const [statusKey, statusLabel] = getStatus(activity); const facilitator = { name: activity.facilitator, degree: activity.facilitatorDegree }; return <article className="all-agenda-item" key={`${activity.facilitatorId}-${activity.id}`}><div className="all-agenda-date">{formatAgendaDate(activity.startDate, activity.endDate).day}<small>{formatAgendaDate(activity.startDate, activity.endDate).month}</small></div><div className="all-agenda-info"><h4>{activity.name}</h4><p>{formatFacilitatorName(facilitator)}</p><small>{[activity.material, activity.organizer].filter(Boolean).join(' · ') || 'Informasi kegiatan belum lengkap'}</small></div><div className="all-agenda-actions"><span className={`status-badge ${statusKey === 'finished' ? 'lengkap' : 'belum_lengkap'}`}>{statusLabel}</span>{statusKey === 'finished' ? activity.reviewCount ? <span className="reviewed-label">★ Sudah dinilai</span> : <button type="button" className="text-button" onClick={() => { setRatingActivity(activity); setRating('5'); setError('') }}>Beri rating</button> : <small>Rating setelah selesai</small>}</div></article> })}</div>}
+    </div>
+    <Modal open={Boolean(ratingActivity)} onClose={() => !saving && setRatingActivity(null)} title="Beri Rating Fasilitator">{ratingActivity && <form onSubmit={saveRating}>{error && <div className="form-error">{error}</div>}<p className="muted">Beri rating untuk <strong>{formatFacilitatorName({ name: ratingActivity.facilitator, degree: ratingActivity.facilitatorDegree })}</strong>.</p><label className="form-field"><span>Rating</span><select value={rating} onChange={(event) => setRating(event.target.value)}>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label><div className="modal-footer"><button className="primary-button" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan Rating'}</button><button type="button" className="outline-button" onClick={() => setRatingActivity(null)} disabled={saving}>Batal</button></div></form>}</Modal>
+  </Modal>
+}
+
+function StatDetailModal({ stat, data, facilitators, onClose }) {
+  if (!stat) return null
+  const today = new Date()
+  const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+  const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`
+  const people = data.facilitatorSummary || facilitators || []
+  const activities = data.allActivities || []
+  let title = stat.label
+  let description = 'Ringkasan data terbaru dari sistem.'
+  let items = []
+  if (stat.key === 'facilitators') {
+    description = 'Seluruh fasilitator yang terdaftar.'
+    items = people
+  } else if (stat.key === 'complete' || stat.key === 'incomplete') {
+    const complete = stat.key === 'complete'
+    title = complete ? 'Fasilitator dengan Data Lengkap' : 'Fasilitator dengan Data Belum Lengkap'
+    description = complete ? 'Profil telah memenuhi seluruh kelengkapan data.' : 'Profil yang masih membutuhkan pembaruan data.'
+    items = people.filter((person) => Boolean(person.completeness?.isComplete) === complete)
+  } else if (stat.key === 'activities' || stat.key === 'thisMonth') {
+    const thisMonth = stat.key === 'thisMonth'
+    title = thisMonth ? 'Kegiatan Bulan Ini' : 'Seluruh Pelatihan / Kegiatan'
+    description = thisMonth ? `Kegiatan pada ${monthNames[today.getMonth()]} ${today.getFullYear()}.` : 'Seluruh riwayat kegiatan yang tersimpan.'
+    items = thisMonth ? activities.filter((item) => (item.startDate || '') < monthEnd && (item.endDate || item.startDate || '') >= monthStart) : activities
+  } else if (stat.key === 'newSubmissions') {
+    title = 'Pengajuan Baru'
+    description = `Fasilitator yang ditambahkan sejak ${monthNames[today.getMonth()]} ${today.getFullYear()}.`
+    items = people.filter((person) => (person.createdAt || person.created_at || '') >= monthStart)
+  }
+  return <Modal open onClose={onClose} title={title}>
+    <div className="stat-detail-modal">
+      <div className="stat-detail-summary"><span>{description}</span><strong>{stat.value} data</strong></div>
+      {items.length === 0 ? <EmptyState text="Belum ada data untuk ditampilkan." /> : <div className="stat-detail-list">
+        {items.map((item, index) => {
+          const isActivity = stat.key === 'activities' || stat.key === 'thisMonth'
+          const person = !isActivity && item
+          return <article className="stat-detail-item" key={`${item.id || item.name}-${index}`}>
+            <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
+            <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4><p>{isActivity ? `${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}` : (person.position || 'Fasilitator')}</p></div>
+            {!isActivity && <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>}
+          </article>
+        })}
+      </div>}
+    </div>
+  </Modal>
+}
+
 function EmptyState({ text }) {
   return (
     <div className="empty-state">
@@ -304,22 +398,17 @@ function EmptyState({ text }) {
 
 function WelcomeTrainingBanner({ activities }) {
   const today = new Date();
-  
-  // Try to find today's training.
-  const todayActivity = activities?.find(activity => {
-    if (activity.tanggal || activity.date) {
-      const activityDate = new Date(`${activity.tanggal || activity.date}T00:00:00`);
-      return activityDate.getDate() === today.getDate() &&
-             activityDate.getMonth() === today.getMonth() &&
-             activityDate.getFullYear() === today.getFullYear();
-    }
-    // Fallback if using old dummy format
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayActivities = (activities || []).filter((activity) => {
+    const start = activity.startDate || activity.date || activity.tanggal;
+    const end = activity.endDate || start;
+    if (start) return start <= todayKey && todayKey <= end;
     const isSameDay = activity.day == today.getDate();
     const isSameMonth = activity.month === monthNames[today.getMonth()] || activity.month === monthNames[today.getMonth()].substring(0, 3);
     return isSameDay && isSameMonth;
   });
 
-  if (!todayActivity) {
+  if (todayActivities.length === 0) {
     return (
       <div className="training-banner empty-banner">
         <div className="banner-content">
@@ -341,40 +430,11 @@ function WelcomeTrainingBanner({ activities }) {
       </div>
       <div className="banner-middle">
         <span className="banner-badge">HARI INI</span>
-        <h4>Ada Pelatihan Hari Ini! 🎯</h4>
-        <p>Jangan lewatkan kegiatan penting hari ini.</p>
+        <h4>{todayActivities.length > 1 ? `${todayActivities.length} Pelatihan Hari Ini! 🎯` : 'Ada Pelatihan Hari Ini! 🎯'}</h4>
+        <p>{todayActivities.length > 1 ? 'Berikut kegiatan yang sedang berlangsung hari ini.' : 'Jangan lewatkan kegiatan penting hari ini.'}</p>
       </div>
       <div className="banner-right">
-        <div className="info-grid">
-          <div className="info-item">
-            <span className="info-icon">📋</span>
-            <div>
-              <span className="info-label">Materi</span>
-              <span className="info-value">{todayActivity.materi || todayActivity.name || '-'}</span>
-            </div>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🧑‍🏫</span>
-            <div>
-              <span className="info-label">MOT</span>
-              <span className="info-value">{todayActivity.mot || todayActivity.facilitator || '-'}</span>
-            </div>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🧑‍💻</span>
-            <div>
-              <span className="info-label">Admin</span>
-              <span className="info-value">{todayActivity.admin || '-'}</span>
-            </div>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🚪</span>
-            <div>
-              <span className="info-label">Ruangan</span>
-              <span className="info-value">{todayActivity.ruangan || '-'}</span>
-            </div>
-          </div>
-        </div>
+        <div className="today-training-list">{todayActivities.map((activity) => <div className="today-training-item" key={activity.id || activity.name}><strong>{activity.name}</strong><span>{activity.facilitator || 'Fasilitator belum tercatat'}</span><small>{activity.material || activity.organizer || 'Detail kegiatan tersedia di agenda'}</small></div>)}</div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
 import { getTrainings } from '../../training/api/trainingApi'
 import { Modal } from '../../../shared/components/Modal'
+import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 function toWhatsAppLink(phone) {
   if (!phone) return null
@@ -51,7 +52,7 @@ export function SearchPage({ onSelectFacilitator, onNavigate, facilitatorId: inc
           }
         })
       )
-      setActivityState({ loading: false, error: '', records: perFacilitator.filter(Boolean) })
+      setActivityState({ loading: false, error: '', records: perFacilitator.filter(Boolean).sort((a, b) => compareRecommendedFacilitators(a.facilitator, b.facilitator)) })
     } catch (error) {
       setActivityState({ loading: false, error: error.message, records: [] })
     }
@@ -97,7 +98,7 @@ export function SearchPage({ onSelectFacilitator, onNavigate, facilitatorId: inc
                 </div>
               )}
             </div>
-            <h3 className="search-result-name">{facilitator.name}</h3>
+            <h3 className="search-result-name">{formatFacilitatorName(facilitator)}</h3>
             <div className="search-result-rating">
               ★ {facilitator.rating?.average ?? facilitator.averageRating ?? '—'}
               <span> ({facilitator.rating?.count ?? facilitator.reviewCount ?? 0} ulasan)</span>
@@ -181,7 +182,7 @@ function TrainingHistoryModal({ facilitatorId, onClose, onNavigate }) {
                 {(facilitator.name || '?').charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="th-name">{facilitator.name}</div>
+            <div className="th-name">{formatFacilitatorName(facilitator)}</div>
             <div className="th-position">{facilitator.position || '-'}{facilitator.unit ? ` · ${facilitator.unit}` : ''}</div>
             <div className="th-rating">
               ★ {facilitator.rating?.average ?? facilitator.averageRating ?? '—'}

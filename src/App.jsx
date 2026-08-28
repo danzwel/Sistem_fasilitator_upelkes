@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { dashboardData } from './modules/dashboard/data/dashboardData'
 import { getDashboardSummary } from './modules/dashboard/api/dashboardApi'
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage'
+import { ActivityHistoryPage } from './modules/dashboard/pages/ActivityHistoryPage'
 import { CompetencyProfilePage } from './modules/competency/pages/CompetencyProfilePage'
 import { AppShell } from './shared/layout/AppShell'
 import { PlaceholderPage } from './shared/pages/PlaceholderPage'
@@ -15,6 +16,7 @@ import { ImportPelatihanExcelPage } from './modules/training/pages/ImportPelatih
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
+  kegiatan: { label: 'Semua Kegiatan', component: ActivityHistoryPage },
   fasilitator: { label: 'Fasilitator', component: FasilitatorPage },
   'fasilitator-tambah': { label: 'Tambah Fasilitator', component: FasilitatorFormPage },
   'fasilitator-edit': { label: 'Edit Fasilitator', component: FasilitatorFormPage },
@@ -52,6 +54,7 @@ export default function App() {
   const [activePage, setActivePage] = useState(route.activePage || 'dashboard')
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(route.selectedFacilitatorId || null)
   const [cvReturnTo, setCvReturnTo] = useState(route.cvReturnTo || 'fasilitator-detail')
+  const [editReturnTo, setEditReturnTo] = useState(route.editReturnTo || 'fasilitator')
   const [dashboard, setDashboard] = useState(dashboardData)
 
   useEffect(() => {
@@ -62,12 +65,14 @@ export default function App() {
 
   function handleNavigate(pageId, facilitatorId = null, returnTo = null) {
     const nextReturnTo = pageId === 'fasilitator-cv' ? (returnTo || 'fasilitator-detail') : cvReturnTo
+    const nextEditReturnTo = pageId === 'fasilitator-edit' ? (returnTo || (activePage === 'fasilitator-detail' ? 'fasilitator-detail' : 'fasilitator')) : editReturnTo
     setSelectedFacilitatorId(facilitatorId)
     if (pageId === 'fasilitator-cv') {
       setCvReturnTo(nextReturnTo)
     }
+    if (pageId === 'fasilitator-edit') setEditReturnTo(nextEditReturnTo)
     setActivePage(pageId)
-    localStorage.setItem(APP_STATE_KEY, JSON.stringify({ activePage: pageId, selectedFacilitatorId: facilitatorId, cvReturnTo: nextReturnTo }))
+    localStorage.setItem(APP_STATE_KEY, JSON.stringify({ activePage: pageId, selectedFacilitatorId: facilitatorId, cvReturnTo: nextReturnTo, editReturnTo: nextEditReturnTo }))
   }
 
   const pageKey = REMOUNT_ON_FACILITATOR_CHANGE.includes(activePage)
@@ -85,6 +90,7 @@ export default function App() {
         facilitatorId={selectedFacilitatorId}
         selectedFacilitatorId={selectedFacilitatorId}
         cvReturnTo={cvReturnTo}
+        returnTo={editReturnTo}
         onSelectFacilitator={(id) => handleNavigate('kompetensi', id)}
       />
     </AppShell>
