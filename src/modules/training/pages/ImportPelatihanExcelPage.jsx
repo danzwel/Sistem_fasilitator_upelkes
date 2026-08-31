@@ -4,14 +4,15 @@ import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
 import { createTraining } from '../api/trainingApi'
 
 const HEADER_ALIASES = {
-  tahun: 'tahun',
-  bulan: 'bulan',
-  'nama pelatihan': 'namaPelatihan', 'nama pelatihan/kegiatan': 'namaPelatihan', 'nama kegiatan': 'namaPelatihan',
-  'mata pelatihan': 'material', materi: 'material', 'mata pelatihan/materi': 'material',
-  'nama fasilitator': 'facilitatorName', fasilitator: 'facilitatorName',
-  penyelenggara: 'organizer',
-  peran: 'role',
-  kategori: 'category',
+  tahun: 'tahun', 'tahun pelaksanaan': 'tahun',
+  bulan: 'bulan', 'bulan pelaksanaan': 'bulan',
+  tanggal: 'date', 'tanggal kegiatan': 'date', 'tanggal mulai': 'startDate', 'tanggal selesai': 'endDate',
+  'nama pelatihan': 'namaPelatihan', 'nama pelatihan/kegiatan': 'namaPelatihan', 'nama kegiatan': 'namaPelatihan', 'judul kegiatan': 'namaPelatihan',
+  'mata pelatihan': 'material', materi: 'material', 'materi pelatihan': 'material', 'materi yang diajarkan': 'material', 'mata pelatihan/materi': 'material',
+  'nama fasilitator': 'facilitatorName', fasilitator: 'facilitatorName', 'fasilitator/narasumber': 'facilitatorName', narasumber: 'facilitatorName',
+  penyelenggara: 'organizer', 'instansi penyelenggara': 'organizer', 'organisasi penyelenggara': 'organizer',
+  peran: 'role', 'peran fasilitator': 'role',
+  kategori: 'category', 'jenis pelatihan': 'category',
 }
 
 const MONTH_MAP = {
@@ -22,7 +23,21 @@ const MONTH_MAP = {
 const REQUIRED_FIELDS = ['namaPelatihan', 'facilitatorName']
 
 function normalizeHeader(header) {
-  return String(header ?? '').trim().toLowerCase()
+  return String(header ?? '').trim().toLowerCase().replace(/[\u00a0]/g, ' ').replace(/\s+/g, ' ')
+}
+
+function normalizeName(value) {
+  return String(value ?? '').toLowerCase().replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function normalizeDate(value) {
+  if (typeof value === 'number' && value > 20000) {
+    const date = XLSX.SSF.parse_date_code(value)
+    return date ? `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}` : ''
+  }
+  const text = String(value ?? '').trim()
+  const dmy = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+  return dmy ? `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}` : text
 }
 
 function mapRow(rawRow, headerMap) {
@@ -30,7 +45,7 @@ function mapRow(rawRow, headerMap) {
   for (const [colIndex, field] of Object.entries(headerMap)) {
     const value = rawRow[colIndex]
     if (value !== undefined && value !== null && String(value).trim() !== '') {
-      result[field] = String(value).trim()
+      result[field] = ['date', 'startDate', 'endDate'].includes(field) ? normalizeDate(value) : String(value).trim()
     }
   }
   return result
@@ -55,7 +70,7 @@ function validateRow(row, facilitatorByName) {
 
   let facilitatorId = null
   if (row.facilitatorName) {
-    const match = facilitatorByName.get(row.facilitatorName.toLowerCase())
+    const match = facilitatorByName.get(normalizeName(row.facilitatorName))
     if (!match) {
       errors.push(`Fasilitator "${row.facilitatorName}" tidak ditemukan di database`)
     } else {
@@ -112,7 +127,7 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
       }
 
       const facilitators = await getFacilitators()
-      const facilitatorByName = new Map(facilitators.map((f) => [f.name.toLowerCase(), f.id]))
+      const facilitatorByName = new Map(facilitators.map((f) => [normalizeName(f.name), f.id]))
 
       const dataRows = raw.slice(1).filter((r) => r.some((cell) => String(cell).trim() !== ''))
       const processed = dataRows.map((rawRow) => {
@@ -144,7 +159,9 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
         const payload = {
           name: row.data.namaPelatihan,
           material: row.data.material ?? '',
-          date: buildDate(row.data.tahun, row.data.bulan),
+          date: row.data.date || row.data.startDate || buildDate(row.data.tahun, row.data.bulan),
+          startDate: row.data.startDate || row.data.date || buildDate(row.data.tahun, row.data.bulan),
+          endDate: row.data.endDate || row.data.startDate || row.data.date || buildDate(row.data.tahun, row.data.bulan),
           organizer: row.data.organizer ?? '',
           category: resolveCategory(row.data.category),
           ...(row.data.role ? { role: row.data.role } : {}),
@@ -181,7 +198,8 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
         <div className="panel">
           <div className="panel-heading"><h3>1. Upload File Excel</h3></div>
           <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Kolom yang dikenali: Tahun, Bulan, Nama Pelatihan (wajib), Mata Pelatihan/Materi, Nama Fasilitator (wajib — harus persis sama dengan nama yang sudah terdaftar), Penyelenggara, Peran, Kategori.
+            Kolom yang dikenali: Tahun/Bulan atau Tanggal/Tanggal Mulai/Tanggal Selesai, Nama Pelatihan/Kegiatan (wajib),
+            Mata Pelatihan/Materi, Nama Fasilitator/Narasumber (wajib), Penyelenggara, Peran, Kategori/Jenis Pelatihan.
           </p>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFileSelect} />
           <button className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>

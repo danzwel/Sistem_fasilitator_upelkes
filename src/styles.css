@@ -2089,3 +2089,57 @@ sofi-font-override.css
 .review-panel .review-fields input{display:none}
 .all-agenda-summary{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px;color:var(--text-secondary);font-size:12px}.all-agenda-summary strong{color:var(--text-primary);font-size:14px}.all-agenda-filters{margin-bottom:14px}.all-agenda-list{display:grid;gap:8px;max-height:58vh;overflow:auto}.all-agenda-item{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:14px;align-items:center;padding:13px;border:1px solid var(--border-default);border-radius:12px;background:#211a30}.all-agenda-date{color:#d59bf0;font:600 18px 'Space Grotesk';text-align:center}.all-agenda-date small{display:block;color:var(--text-secondary);font:11px inherit;text-transform:uppercase}.all-agenda-info{min-width:0}.all-agenda-info h4{margin:0 0 4px;color:var(--text-primary);font:600 14px 'Space Grotesk'}.all-agenda-info p{margin:0 0 3px;color:#e6ddec;font-size:12px}.all-agenda-info>small{color:var(--text-secondary);font-size:10px}.all-agenda-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;text-align:right}.all-agenda-actions>small{max-width:130px;color:var(--text-secondary);font-size:10px}@media(max-width:650px){.all-agenda-item{grid-template-columns:48px minmax(0,1fr)}.all-agenda-actions{grid-column:2;align-items:flex-start;text-align:left}.all-agenda-actions .text-button{padding:0}}
 .training-facilitator-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border-default)}.training-facilitator-row:last-child{border-bottom:0}.training-facilitator-photo{width:44px;height:44px;flex:none;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,#8259c4,#d172a4);display:grid;place-items:center;color:#fff;font-weight:700}.training-facilitator-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;flex:1}.training-facilitator-info>b{width:100%;font-size:14px;color:var(--text-primary)}.training-facilitator-rating{color:#f5c66f;font-size:12px}.training-facilitator-rating small{color:var(--text-secondary)}.training-facilitator-contacts{display:flex;gap:7px;flex:none}.training-facilitator-contacts .detail-contact-button{width:32px;height:32px;padding:0;display:grid;place-items:center;border-radius:50%;font-size:15px}.training-group-modal .status-badge{font-size:10px}
+
+/* Visual refresh: consistent controls and a calmer, more readable agenda modal. */
+:root { --control-height: 42px; }
+body { font-family: 'Jost', sans-serif; }
+.primary-button, .outline-button, .filter-tabs button, .all-agenda-actions .text-button {
+  min-height: var(--control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  border-radius: 10px;
+}
+.primary-button, .outline-button { min-width: 132px; padding: 10px 16px; }
+.primary-button + .outline-button, .outline-button + .primary-button { margin-top: 0; }
+.modal-footer { align-items: center; gap: 10px; }
+.modal-footer .primary-button, .modal-footer .outline-button { margin-top: 0; }
+.filter-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.filter-tabs button { min-width: 112px; padding: 10px 16px; }
+.filter-tabs button.selected { box-shadow: 0 5px 14px rgba(191,104,245,.22); }
+.modal-card { max-width: 940px; background: #211a31; border-color: #493b60; border-radius: 22px; }
+.modal-header { padding: 26px 30px 20px; }
+.modal-header h3 { font-family: 'Space Grotesk', sans-serif !important; font-size: 22px; letter-spacing: -.02em; }
+.modal-body { padding: 8px 30px 30px; }
+.all-agenda-summary { padding: 4px 2px 16px; margin-bottom: 0; font-size: 13px; }
+.all-agenda-summary strong { font-size: 15px; color: var(--accent-bright); }
+.all-agenda-filters { padding-bottom: 18px; border-bottom: 1px solid var(--border-subtle); }
+.all-agenda-list { gap: 10px; max-height: 59vh; padding: 2px 4px 4px 0; }
+.all-agenda-item { grid-template-columns: 78px minmax(0,1fr) 164px; gap: 18px; padding: 16px 18px; border-radius: 14px; background: rgba(18,13,29,.42); transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast); }
+.all-agenda-item:hover { border-color: rgba(191,104,245,.5); background: rgba(191,104,245,.06); transform: translateY(-1px); }
+.all-agenda-date { font-family: 'Space Grotesk', sans-serif; font-size: 21px; line-height: 1.05; }
+.all-agenda-date small { margin-top: 5px; font-size: 11px; letter-spacing: .08em; }
+.all-agenda-info h4 { font-family: 'Jost', sans-serif; font-size: 16px; line-height: 1.3; margin-bottom: 5px; }
+.all-agenda-info p { font-size: 13px; color: #eee7f7; }
+.all-agenda-info>small { display: block; margin-top: 7px; font-size: 11px; }
+.all-agenda-actions { align-items: stretch; text-align: center; }
+.all-agenda-actions .status-badge, .all-agenda-actions .text-button { width: 100%; }
+.all-agenda-actions .text-button { min-height: 32px; }
+@media (max-width: 700px) {
+  .modal-card { max-width: 100%; }
+  .modal-header, .modal-body { padding-left: 20px; padding-right: 20px; }
+  .all-agenda-item { grid-template-columns: 58px minmax(0,1fr); gap: 12px; }
+  .all-agenda-actions { grid-column: 2; align-items: flex-start; text-align: left; width: 100%; }
+  .all-agenda-actions .status-badge, .all-agenda-actions .text-button { width: auto; min-width: 132px; }
+}
+.rating-hero { display: flex; align-items: center; gap: 14px; padding: 15px; margin: 0 0 18px; border: 1px solid rgba(213,155,240,.24); border-radius: 14px; background: linear-gradient(135deg, rgba(191,104,245,.13), rgba(112,72,220,.08)); }
+.rating-hero-icon { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; border-radius: 13px; color: #fff2bd; font-size: 24px; background: linear-gradient(145deg, #f4b84e, #c879dc); box-shadow: 0 5px 16px rgba(222,155,78,.25); }
+.rating-hero strong, .rating-hero span { display: block; }
+.rating-hero strong { color: var(--text-primary); font-size: 14px; margin-bottom: 3px; }
+.rating-hero span { color: var(--text-secondary); font-size: 11px; line-height: 1.45; }
+.rating-form-actions { gap: 10px; }
+.rating-form-actions .primary-button, .rating-form-actions .outline-button { margin-top: 0; }
+.stat-detail-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 120px; }
+.stat-detail-actions .outline-button { min-width: 120px; min-height: 34px; padding: 7px 12px; font-size: 11px; margin-top: 0; }
+@media (max-width: 600px) { .stat-detail-actions { align-items: stretch; min-width: 104px; } .stat-detail-actions .outline-button { min-width: 104px; } }
