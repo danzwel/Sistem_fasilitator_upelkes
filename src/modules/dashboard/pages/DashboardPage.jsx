@@ -228,7 +228,7 @@ export function DashboardPage({ data, onNavigate }) {
       </div>
 
       <AllAgendaModal activities={data.allActivities || []} open={allAgendaOpen} onClose={() => setAllAgendaOpen(false)} />
-      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} onNavigate={onNavigate} />
+      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} />
 
       <Modal open={agendaOpen} onClose={() => setAgendaOpen(false)} title="Tambah Agenda Pelatihan">
         <form onSubmit={saveAgenda}>
@@ -337,7 +337,7 @@ function AllAgendaModal({ activities, open, onClose }) {
   </Modal>
 }
 
-function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
+function StatDetailModal({ stat, data, facilitators, onClose }) {
   if (!stat) return null
   const today = new Date()
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
@@ -383,7 +383,7 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
           return <article className="stat-detail-item" key={`${item.id || item.name}-${index}`}>
             <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
             <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4><p>{isActivity ? `${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}` : (person.position || 'Fasilitator')}</p></div>
-            {!isActivity && <div className="stat-detail-actions"><span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>{!person.completeness?.isComplete && <button type="button" className="outline-button" onClick={() => { onClose(); onNavigate?.('fasilitator-edit', person.id, 'dashboard') }}>Edit Data</button>}</div>}
+            {!isActivity && <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>}
           </article>
         })}
       </div>}
