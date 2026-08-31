@@ -6,25 +6,35 @@ import { getFacilitators, createFacilitator, updateFacilitator } from '../api/fa
 // dipetakan ke field internal kita. Tambahin alias baru di sini kalau
 // Adpen pakai penamaan kolom yang beda.
 const HEADER_ALIASES = {
-  nama: 'nama', 'nama lengkap': 'nama',
-  email: 'email',
-  'no hp': 'noHp', 'nomor hp': 'noHp', 'no. hp': 'noHp', hp: 'noHp', telepon: 'noHp',
+  nama: 'nama', 'nama lengkap': 'nama', 'nama fasilitator': 'nama', 'nama narasumber': 'nama',
+  email: 'email', 'alamat email': 'email',
+  'no hp': 'noHp', 'nomor hp': 'noHp', 'no. hp': 'noHp', 'no hp/wa': 'noHp', 'nomor whatsapp': 'noHp', hp: 'noHp', telepon: 'noHp', whatsapp: 'noHp',
   nik: 'nik',
   nip: 'nip',
-  gelar: 'gelar',
-  'tempat lahir': 'tempatLahir',
-  'tanggal lahir': 'tanggalLahir',
-  'pangkat/golongan': 'pangkatGolongan', 'pangkat golongan': 'pangkatGolongan', 'pangkat/gol': 'pangkatGolongan',
-  jabatan: 'jabatan',
-  'unit kerja': 'unitKerja',
-  'alamat kantor': 'alamatKantor',
-  'alamat rumah': 'alamatRumah',
+  gelar: 'gelar', 'gelar akademik': 'gelar',
+  'tempat lahir': 'tempatLahir', 'kota lahir': 'tempatLahir',
+  'tanggal lahir': 'tanggalLahir', 'tgl lahir': 'tanggalLahir', 'tanggal lahir (dd-mm-yyyy)': 'tanggalLahir',
+  'pangkat/golongan': 'pangkatGolongan', 'pangkat golongan': 'pangkatGolongan', 'pangkat/gol': 'pangkatGolongan', 'golongan': 'pangkatGolongan',
+  jabatan: 'jabatan', 'jabatan terakhir': 'jabatan',
+  'unit kerja': 'unitKerja', 'satuan kerja': 'unitKerja', 'instansi': 'unitKerja',
+  'alamat kantor': 'alamatKantor', 'alamat instansi': 'alamatKantor',
+  'alamat rumah': 'alamatRumah', 'alamat domisili': 'alamatRumah',
 }
 
 const REQUIRED_FIELDS = ['nama']
 
 function normalizeHeader(header) {
-  return String(header ?? '').trim().toLowerCase()
+  return String(header ?? '').trim().toLowerCase().replace(/[\u00a0]/g, ' ').replace(/\s+/g, ' ')
+}
+
+function normalizeDate(value) {
+  if (typeof value === 'number' && value > 20000) {
+    const date = XLSX.SSF.parse_date_code(value)
+    return date ? `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}` : String(value)
+  }
+  const text = String(value ?? '').trim()
+  const match = text.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+  return match ? `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}` : text
 }
 
 function mapRowToFacilitator(rawRow, headerMap) {
@@ -32,7 +42,7 @@ function mapRowToFacilitator(rawRow, headerMap) {
   for (const [colIndex, field] of Object.entries(headerMap)) {
     const value = rawRow[colIndex]
     if (value !== undefined && value !== null && String(value).trim() !== '') {
-      result[field] = String(value).trim()
+      result[field] = field === 'tanggalLahir' ? normalizeDate(value) : String(value).trim()
     }
   }
   return result
@@ -57,7 +67,7 @@ function validateRow(row, existingByKey, seenInFileKeys) {
     return { status: 'error', errors }
   }
 
-  const dupeKey = row.email || row.nik
+  const dupeKey = row.email?.toLowerCase() || row.nik
   if (dupeKey) {
     if (seenInFileKeys.has(dupeKey)) {
       return { status: 'error', errors: ['Duplikat dengan baris lain di file ini'] }
@@ -163,11 +173,25 @@ export function ImportExcelPage({ onNavigate }) {
         continue
       }
       try {
+        const payload = {
+          name: row.data.nama,
+          degree: row.data.gelar,
+          birthInfo: [row.data.tempatLahir, row.data.tanggalLahir].filter(Boolean).join(', ') || undefined,
+          nik: row.data.nik,
+          nip: row.data.nip,
+          rank: row.data.pangkatGolongan,
+          position: row.data.jabatan,
+          unit: row.data.unitKerja,
+          officeAddress: row.data.alamatKantor,
+          homeAddress: row.data.alamatRumah,
+          phone: row.data.noHp,
+          email: row.data.email?.toLowerCase(),
+        }
         if (row.status === 'duplicate' && row.action === 'update') {
-          await updateFacilitator(row.existingId, row.data)
+          await updateFacilitator(row.existingId, payload)
           result.updated++
         } else {
-          await createFacilitator(row.data)
+          await createFacilitator(payload)
           result.created++
         }
       } catch (err) {
@@ -200,8 +224,8 @@ export function ImportExcelPage({ onNavigate }) {
         <div className="panel">
           <div className="panel-heading"><h3>1. Upload File Excel</h3></div>
           <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Kolom yang dikenali: Nama (wajib), Email, No HP, NIK, NIP, Gelar, Tempat Lahir, Tanggal Lahir,
-            Pangkat/Golongan, Jabatan, Unit Kerja, Alamat Kantor, Alamat Rumah.
+            Kolom yang dikenali: Nama (wajib), Email, No HP/WA, NIK, NIP, Gelar, Tempat/Kota Lahir,
+            Tanggal/Tgl Lahir, Pangkat/Golongan, Jabatan, Unit/Satuan Kerja, Alamat Kantor/Instansi, Alamat Rumah/Domisili.
           </p>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFileSelect} />
           <button className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>

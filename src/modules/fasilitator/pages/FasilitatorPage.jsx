@@ -146,8 +146,8 @@ export function FasilitatorPage({ onNavigate }) {
                     )}
                   </td>
                   <td>
-                    <div className="table-primary">{f.name || '-'}</div>
-                    <div className="table-secondary">{formatFacilitatorName(f)}</div>
+                    <div className="table-primary">{formatFacilitatorName(f)}</div>
+                    <div className="table-secondary">NIP: {f.nip || '-'}</div>
                   </td>
                   <td>
                     <div className="table-primary">{f.position || '-'}</div>

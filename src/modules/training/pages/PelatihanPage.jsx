@@ -4,7 +4,7 @@ import { getTrainings, getTrainingSubjects, createTrainingSubject, createTrainin
 import { Modal } from '../../../shared/components/Modal'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
-import { formatFacilitatorName } from '../../../shared/utils/facilitator'
+import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { competencyCatalog } from '../../fasilitator/data/competencyCatalog'
 
 const CATEGORY_LABEL = {
@@ -149,6 +149,9 @@ export function PelatihanPage({ onNavigate }) {
       .filter((card) => !q || card.name.toLowerCase().includes(q) || card.facilitators.some((person) => person.name.toLowerCase().includes(q)))
       .sort((a, b) => a.name.localeCompare(b.name))
   }, [facilitators, rows, globalSubjects, query, categoryFilter])
+
+  const selectedGroup = competencyCards.find((card) => card.name === groupDetailName)
+  const selectedGroupFacilitators = [...(selectedGroup?.facilitators || [])].sort(compareRecommendedFacilitators)
 
   function openAddForm() {
     setForm(EMPTY_FORM)
@@ -382,7 +385,7 @@ export function PelatihanPage({ onNavigate }) {
 
       <Modal open={Boolean(groupDetailName)} onClose={() => setGroupDetailName(null)} title={groupDetailName || 'Fasilitator Pelatihan'}>
         <div className="training-group-modal">
-          {competencyCards.find((card) => card.name === groupDetailName)?.facilitators.length ? competencyCards.find((card) => card.name === groupDetailName).facilitators.map((item) => (
+          {selectedGroupFacilitators.length ? selectedGroupFacilitators.map((item) => (
             <div className="training-facilitator-row" key={item.id}>
               {item.photoUrl ? <img src={resolveAssetUrl(item.photoUrl)} alt="" className="training-facilitator-photo" /> : <div className="training-facilitator-photo training-facilitator-photo-placeholder">{(item.name || '?').charAt(0).toUpperCase()}</div>}
               <div className="training-facilitator-info">
