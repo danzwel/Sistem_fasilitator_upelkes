@@ -13,6 +13,7 @@ import { CvPreviewPage } from './modules/cv/pages/CvPreviewPage'
 import { PelatihanPage } from './modules/training/pages/PelatihanPage'
 import { ImportExcelPage } from './modules/fasilitator/pages/ImportExcelPage'
 import { ImportPelatihanExcelPage } from './modules/training/pages/ImportPelatihanExcelPage'
+import { SettingsPage } from './modules/settings/pages/SettingsPage'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
@@ -25,13 +26,14 @@ const pages = {
   'fasilitator-import': { label: 'Import Excel', component: ImportExcelPage },
   pelatihan: { label: 'Pelatihan', component: PelatihanPage },
   'pelatihan-import': { label: 'Import Excel Pelatihan', component: ImportPelatihanExcelPage },
+  pengaturan: { label: 'Pengaturan', component: SettingsPage },
   kompetensi: { label: 'Profil Kompetensi', component: CompetencyProfilePage, owner: 'Daniel' },
 }
 
 // Halaman-halaman ini butuh "reset total" tiap ganti fasilitator (biar file
 // upload yang kepilih nggak nyangkut dari sesi sebelumnya). Halaman lain
-// (termasuk 'pencarian') SENGAJA TIDAK dikasih key ini, supaya state
-// internalnya (misal hasil pencarian) nggak ke-reset pas ganti halaman.
+// Halaman lain sengaja tidak diberi key ini supaya state internalnya tidak
+// di-reset saat pengguna berpindah halaman.
 const REMOUNT_ON_FACILITATOR_CHANGE = [
   'fasilitator-edit',
   'fasilitator-tambah',
@@ -56,6 +58,13 @@ export default function App() {
   const [cvReturnTo, setCvReturnTo] = useState(route.cvReturnTo || 'fasilitator-detail')
   const [editReturnTo, setEditReturnTo] = useState(route.editReturnTo || 'fasilitator')
   const [dashboard, setDashboard] = useState(dashboardData)
+  const [sessionVersion, setSessionVersion] = useState(0)
+
+  useEffect(() => {
+    const refresh = () => setSessionVersion((value) => value + 1)
+    window.addEventListener('upelkes:auth-expired', refresh)
+    return () => window.removeEventListener('upelkes:auth-expired', refresh)
+  }, [])
 
   useEffect(() => {
     getDashboardSummary().then(setDashboard).catch((error) => console.error('Gagal memuat dashboard:', error))
@@ -92,6 +101,7 @@ export default function App() {
         cvReturnTo={cvReturnTo}
         returnTo={editReturnTo}
         onSelectFacilitator={(id) => handleNavigate('kompetensi', id)}
+        sessionVersion={sessionVersion}
       />
     </AppShell>
   )
