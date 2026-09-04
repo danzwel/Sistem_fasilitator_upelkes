@@ -5,6 +5,8 @@
 // terbaru: POST /api/facilitators/:id/photo dan /signature, multipart
 // form-data dengan field bernama "file".
 
+import { authHeaders } from '../../../shared/api/client'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 async function uploadFile(path, file) {
@@ -18,6 +20,7 @@ async function uploadFile(path, file) {
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method: 'POST',
+      headers: authHeaders(),
       body: formData,
       signal: controller.signal,
       // Sengaja TIDAK set Content-Type — browser otomatis set multipart
@@ -48,11 +51,11 @@ export function uploadFacilitatorSignature(facilitatorId, file) {
 }
 export function uploadFacilitatorSupporting(facilitatorId, file, name = 'Dokumen Pendukung') {
   const formData = new FormData(); formData.append('file', file); formData.append('name', name)
-  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/supporting`, { method: 'POST', body: formData }).then(async (response) => { const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || `Upload gagal (${response.status})`); return body.data ?? body })
+  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/supporting`, { method: 'POST', headers: authHeaders(), body: formData }).then(async (response) => { const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || `Upload gagal (${response.status})`); return body.data ?? body })
 }
 
 export async function getFacilitatorCertificates(facilitatorId) {
-  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`)
+  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`, { headers: authHeaders() })
   const body = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(body.message || `Gagal memuat sertifikat (${response.status})`)
   return body.data ?? body
@@ -65,7 +68,7 @@ export function uploadFacilitatorCertificate(facilitatorId, file, { name, notes 
   if (notes?.trim()) formData.append('notes', notes.trim())
 
   return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates`, {
-    method: 'POST',
+    method: 'POST', headers: authHeaders(),
     body: formData,
   }).then(async (response) => {
     const body = await response.json().catch(() => ({}))
@@ -76,13 +79,13 @@ export function uploadFacilitatorCertificate(facilitatorId, file, { name, notes 
 
 export function uploadTrainingCertificate(facilitatorId, trainingId, file) {
   const formData = new FormData(); formData.append('file', file)
-  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/trainings/${trainingId}/certificate`, { method: 'POST', body: formData }).then(async (response) => {
+  return fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/trainings/${trainingId}/certificate`, { method: 'POST', headers: authHeaders(), body: formData }).then(async (response) => {
     const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message || `Upload sertifikat gagal (${response.status})`); return body.data ?? body
   })
 }
 
 export async function deleteFacilitatorCertificate(facilitatorId, certificateId) {
-  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates/${certificateId}`, { method: 'DELETE' })
+  const response = await fetch(`${API_BASE_URL}/facilitators/${facilitatorId}/certificates/${certificateId}`, { method: 'DELETE', headers: authHeaders() })
   const body = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(body.message || `Gagal menghapus sertifikat (${response.status})`)
   return body.data ?? body

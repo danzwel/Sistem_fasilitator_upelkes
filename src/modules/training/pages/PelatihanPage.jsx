@@ -126,6 +126,13 @@ export function PelatihanPage({ onNavigate }) {
     return list.sort((a, b) => String(b.date ?? '').localeCompare(String(a.date ?? '')))
   }, [rows, query, categoryFilter])
 
+  function exportTrainings() {
+    const header = ['Nama Kegiatan', 'Fasilitator', 'Materi', 'Tanggal Mulai', 'Tanggal Selesai', 'Penyelenggara', 'Kategori']
+    const data = filtered.map((row) => [row.name, row.facilitatorName, row.material || '', row.startDate || row.date || '', row.endDate || row.date || '', row.organizer || '', CATEGORY_LABEL[row.category] || row.category || ''])
+    const csv = [header, ...data].map((record) => record.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'data-pelatihan.csv'; link.click(); URL.revokeObjectURL(url)
+  }
+
   const competencyCards = useMemo(() => {
     const q = query.trim().toLowerCase()
     const cards = new Map([...competencyCatalog, ...globalSubjects].map((name) => [name, { name, facilitators: [], activities: [] }]))
@@ -351,6 +358,7 @@ export function PelatihanPage({ onNavigate }) {
         <div className="panel-heading">
           <h3>Daftar Bidang Pelatihan</h3>
           <div style={{ display: 'flex', gap: 10 }}>
+            <button className="outline-button" onClick={exportTrainings} disabled={!filtered.length} style={{ marginTop: 0 }}>Export CSV</button>
             <div className="search">
               <span>⌕</span>
               <input aria-label="Cari bidang pelatihan" placeholder="Cari bidang atau fasilitator..." value={query} onChange={(e) => setQuery(e.target.value)} />

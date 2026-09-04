@@ -1,3 +1,5 @@
+import { apiRequest } from '../../../shared/api/client'
+
 // src/modules/training/api/trainingApi.js
 //
 // Satu endpoint dipakai untuk 2 kebutuhan CV yang beda, dibedakan lewat
@@ -8,15 +10,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(body.message || `Request gagal (${response.status}): ${response.statusText}`)
-  }
-  return body.data ?? body
+  return apiRequest(API_BASE_URL, path, { headers: { 'Content-Type': 'application/json', ...options.headers }, ...options })
 }
 
 export async function getTrainings(facilitatorId, category) {

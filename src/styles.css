@@ -756,6 +756,15 @@ nav {
   font-size: 12px;
 }
 
+.settings-page { max-width: 1180px; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.settings-grid .panel { margin-bottom: 0; }
+.settings-grid .primary-button, .settings-grid .outline-button { margin-top: 12px; }
+.toast { border-radius: 12px; padding: 11px 14px; margin: 0 0 16px; font-size: 13px; border: 1px solid; }
+.toast-success { color: #8de9c8; background: rgba(40,124,105,.18); border-color: #287c69; }
+.toast-error { color: #efabb6; background: rgba(168,73,120,.18); border-color: #a84978; }
+@media (max-width: 760px) { .settings-grid { grid-template-columns: 1fr; } }
+
 /* Dashboard cards and summaries are interactive. */
 .stats-grid .stat-card {
   width: 100%;

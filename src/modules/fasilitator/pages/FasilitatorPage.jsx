@@ -12,6 +12,8 @@ export function FasilitatorPage({ onNavigate }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState(null)
   const [detailId, setDetailId] = useState(null)
   const [completenessId, setCompletenessId] = useState(null)
@@ -19,6 +21,8 @@ export function FasilitatorPage({ onNavigate }) {
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => { const timer = setTimeout(() => { setDebouncedQuery(query); setPage(1) }, 250); return () => clearTimeout(timer) }, [query])
 
   async function loadData() {
     setLoading(true)
@@ -48,14 +52,23 @@ export function FasilitatorPage({ onNavigate }) {
   }
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = debouncedQuery.trim().toLowerCase()
     const list = !q ? facilitators : facilitators.filter((f) =>
       [f.name, f.position, f.unit, f.nik, f.nip]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q))
     )
     return [...list].sort(compareRecommendedFacilitators)
-  }, [facilitators, query])
+  }, [facilitators, debouncedQuery])
+  const pageSize = 10
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const visible = filtered.slice((page - 1) * pageSize, page * pageSize)
+  function exportFacilitators() {
+    const header = ['Nama', 'NIP', 'Jabatan', 'Unit Kerja', 'No HP', 'Email', 'Kelengkapan']
+    const rows = filtered.map((f) => [formatFacilitatorName(f), f.nip || '', f.position || '', f.unit || '', f.phone || '', f.email || '', f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'])
+    const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'data-fasilitator.csv'; link.click(); URL.revokeObjectURL(url)
+  }
   const completenessPerson = completenessId ? facilitators.find((f) => f.id === completenessId) : null
   const missingItems = completenessPerson ? Object.entries(completenessPerson.completeness?.checks || {}).filter(([, value]) => !value).map(([key]) => completenessLabels[key] || key) : []
 
@@ -79,6 +92,7 @@ export function FasilitatorPage({ onNavigate }) {
       <div className="panel">
         <div className="panel-heading">
           <h3>Daftar Fasilitator</h3>
+          <button className="outline-button" onClick={exportFacilitators} disabled={!filtered.length}>Export CSV</button>
           <div className="search">
             <span>⌕</span>
             <input
@@ -111,6 +125,7 @@ export function FasilitatorPage({ onNavigate }) {
             <small>Coba kata kunci lain atau tambah fasilitator baru.</small>
           </div>
         ) : (
+          <>
           <table className="data-table">
             <thead>
               <tr>
@@ -123,7 +138,7 @@ export function FasilitatorPage({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((f) => (
+              {visible.map((f) => (
                 <tr key={f.id}>
                   <td style={{ width: 48 }}>
                     {f.photoUrl ? (
@@ -184,6 +199,8 @@ export function FasilitatorPage({ onNavigate }) {
               ))}
             </tbody>
           </table>
+          <div className="pagination"><button className="outline-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Sebelumnya</button><span>Halaman {page} dari {pageCount}</span><button className="outline-button" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>Berikutnya</button></div>
+          </>
         )}
       </div>
 

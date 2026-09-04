@@ -1,3 +1,5 @@
+import { apiRequest } from '../../../shared/api/client'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 
 function toApiPayload(fasilitator) {
@@ -30,11 +32,7 @@ async function handleResponse(response) {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  })
-  return handleResponse(response)
+  return apiRequest(API_BASE_URL, path, { headers: { 'Content-Type': 'application/json', ...options.headers }, ...options })
 }
 
 export function getFacilitators() {
