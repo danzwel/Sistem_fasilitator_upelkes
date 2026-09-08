@@ -6,7 +6,6 @@ export const dashboardData = {
     { key: 'complete', label: 'Data Lengkap', value: null, tone: 'green', icon: '✓' },
     { key: 'incomplete', label: 'Data Belum Lengkap', value: null, tone: 'orange', icon: '!' },
     { key: 'activities', label: 'Total Pelatihan / Kegiatan', value: null, tone: 'blue', icon: '▣' },
-    { key: 'newSubmissions', label: 'Pengajuan Baru', value: null, tone: 'pink', icon: '↗' },
     { key: 'thisMonth', label: 'Kegiatan Bulan Ini', value: null, tone: 'cyan', icon: '◷' },
   ],
   upcomingActivities: [],

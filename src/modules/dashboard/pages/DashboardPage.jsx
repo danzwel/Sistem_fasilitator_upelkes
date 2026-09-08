@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
+import { uploadFacilitatorPhoto, uploadFacilitatorSignature, uploadFacilitatorSupporting, uploadFacilitatorCertificate } from '../../fasilitator/api/facilitatorUploadApi'
+import { createEducation } from '../../fasilitator/api/educationApi'
 import { createTraining, createTrainingReview } from '../../training/api/trainingApi'
-import { trainingCatalog } from '../../training/data/trainingCatalog'
-import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
+import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { Modal } from '../../../shared/components/Modal'
 import { getDashboardSummary } from '../api/dashboardApi'
@@ -61,13 +62,6 @@ export function DashboardPage({ data, onNavigate }) {
     setAgendaSaving(true); setAgendaError('')
     try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, material: agendaForm.material, organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
   }
-  function recommendedFacilitators() {
-    const words = agendaForm.name.toLowerCase().split(/\W+/).filter((word) => word.length > 3)
-    return [...facilitators].sort((a, b) => compareRecommendedFacilitators(a, b)
-      || words.filter((word) => (b.competencies || []).some((item) => item.name.toLowerCase().includes(word))).length
-      - words.filter((word) => (a.competencies || []).some((item) => item.name.toLowerCase().includes(word))).length)
-  }
-
   const handlePrevMonth = () => {
     if (calMonth === 0) {
       setCalMonth(11)
@@ -134,7 +128,7 @@ export function DashboardPage({ data, onNavigate }) {
       <WelcomeTrainingBanner activities={data.allActivities || data.upcomingActivities} />
 
       <section className="stats-grid">
-        {data.stats.map(stat => (
+        {data.stats.filter((stat) => stat.key !== 'newSubmissions').map(stat => (
           <button type="button" className={`stat-card ${stat.tone}`} key={stat.key} onClick={() => setSelectedStat(stat)}>
             <div className="stat-top">
               <span className="stat-icon">
@@ -163,7 +157,7 @@ export function DashboardPage({ data, onNavigate }) {
           {data.upcomingActivities.length > 0 ? (
             <div className="agenda-list">
               {data.upcomingActivities.map(item => (
-                <div className="activity-row agenda-row" key={item.id} role="button" tabIndex={0} onClick={() => setSelectedAgenda(item)} onKeyDown={(event) => event.key === 'Enter' && setSelectedAgenda(item)}>
+                <div className="activity-row agenda-row" key={item.id} style={{ '--agenda-color': item.color || '#9f58cc' }} role="button" tabIndex={0} onClick={() => setSelectedAgenda(item)} onKeyDown={(event) => event.key === 'Enter' && setSelectedAgenda(item)}>
                   <div className="date-box agenda-date-box" style={{ '--agenda-color': item.color || '#bf68f5' }}>
                     <b>{formatAgendaDate(item.startDate || item.date, item.endDate).day}</b>
                     <span>{formatAgendaDate(item.startDate || item.date, item.endDate).month}</span>
@@ -228,22 +222,22 @@ export function DashboardPage({ data, onNavigate }) {
       </div>
 
       <AllAgendaModal activities={data.allActivities || []} open={allAgendaOpen} onClose={() => setAllAgendaOpen(false)} />
-      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} />
+      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} onNavigate={onNavigate} />
 
       <Modal open={agendaOpen} onClose={() => setAgendaOpen(false)} title="Tambah Agenda Pelatihan">
         <form onSubmit={saveAgenda}>
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
-            <SearchableInput id="agenda-name" label="Nama Pelatihan" value={agendaForm.name} options={trainingCatalog} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value }))} />
-            <SearchableInput id="agenda-facilitator" label="Fasilitator (rekomendasi berdasarkan kompetensi & kelengkapan)" value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={recommendedFacilitators().map((f) => f.name)} placeholder="Ketik untuk mencari..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
-            <label className="form-field"><span>Materi / Mata Pelatihan</span><input value={agendaForm.material} onChange={(e) => setAgendaForm((form) => ({ ...form, material: e.target.value }))} placeholder="Komunikasi Efektif" /></label>
-            <label className="form-field"><span>Penyelenggara</span><input value={agendaForm.organizer} onChange={(e) => setAgendaForm((form) => ({ ...form, organizer: e.target.value }))} /></label>
-            <label className="form-field"><span>Tanggal Mulai</span><input type="date" value={agendaForm.date} onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} required /></label>
-            <label className="form-field"><span>Tanggal Selesai</span><input type="date" value={agendaForm.endDate} onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} required /></label>
+            <SearchableInput id="agenda-facilitator" label={<>Fasilitator <span className="required-mark">*</span></>} value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={facilitators.map((f) => f.name)} placeholder="Ketik untuk mencari fasilitator..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
+            <label className="form-field"><span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span><input value={agendaForm.name} placeholder="Ketik nama pelatihan..." required onChange={(e) => setAgendaForm((form) => ({ ...form, name: e.target.value }))} /></label>
+            <label className="form-field"><span>Materi / Mata Pelatihan</span><input type="text" value={agendaForm.material} onChange={(e) => setAgendaForm((form) => ({ ...form, material: e.target.value }))} placeholder="Komunikasi Efektif" /></label>
+            <label className="form-field"><span>Penyelenggara</span><input type="text" value={agendaForm.organizer} onChange={(e) => setAgendaForm((form) => ({ ...form, organizer: e.target.value }))} /></label>
+            <label className="form-field"><span>Tanggal Mulai <span className="required-mark">*</span></span><input type="date" value={agendaForm.date} required onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} /></label>
+            <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={agendaForm.endDate} required onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} /></label>
             <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={agendaForm.participantCount} onChange={(e) => setAgendaForm((form) => ({ ...form, participantCount: e.target.value }))} /></label>
             <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
+          <div className="agenda-form-actions"><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
         </form>
       </Modal>
 
@@ -337,13 +331,22 @@ function AllAgendaModal({ activities, open, onClose }) {
   </Modal>
 }
 
-function StatDetailModal({ stat, data, facilitators, onClose }) {
+const completenessLabels = { photo: 'Foto', signature: 'TTD', certificate: 'Sertifikat', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
+
+function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
+  const [detailPerson, setDetailPerson] = useState(null)
+  const [activityDetail, setActivityDetail] = useState(null)
+  const [quickAdd, setQuickAdd] = useState(null)
   if (!stat) return null
   const today = new Date()
   const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
   const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
   const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`
-  const people = data.facilitatorSummary || facilitators || []
+  const basePeople = data.facilitatorSummary || facilitators || []
+  const people = basePeople.map((person) => {
+    const details = (facilitators || []).find((item) => item.id === person.id)
+    return details ? { ...person, completeness: details.completeness } : person
+  })
   const peopleByPriority = [...people].sort((a, b) => {
     const completeDifference = Number(Boolean(b.completeness?.isComplete)) - Number(Boolean(a.completeness?.isComplete))
     if (completeDifference !== 0) return completeDifference
@@ -373,21 +376,106 @@ function StatDetailModal({ stat, data, facilitators, onClose }) {
     description = `Fasilitator yang ditambahkan sejak ${monthNames[today.getMonth()]} ${today.getFullYear()}.`
     items = people.filter((person) => (person.createdAt || person.created_at || '') >= monthStart)
   }
-  return <Modal open onClose={onClose} title={title}>
-    <div className="stat-detail-modal">
-      <div className="stat-detail-summary"><span>{description}</span><strong>{stat.value} data</strong></div>
-      {items.length === 0 ? <EmptyState text="Belum ada data untuk ditampilkan." /> : <div className="stat-detail-list">
-        {items.map((item, index) => {
-          const isActivity = stat.key === 'activities' || stat.key === 'thisMonth'
-          const person = !isActivity && item
-          return <article className="stat-detail-item" key={`${item.id || item.name}-${index}`}>
-            <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
-            <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4><p>{isActivity ? `${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}` : (person.position || 'Fasilitator')}</p></div>
-            {!isActivity && <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>}
-          </article>
-        })}
+  const missingFields = detailPerson ? Object.entries(detailPerson.completeness?.checks || {}).filter(([, complete]) => !complete).map(([key]) => completenessLabels[key] || key) : []
+  const completedFields = Math.max(0, 6 - missingFields.length)
+  return <>
+    <Modal open onClose={onClose} title={title}>
+      <div className="stat-detail-modal">
+        <div className="stat-detail-summary"><span>{description}</span><strong>{stat.value} data</strong></div>
+        {items.length === 0 ? <EmptyState text="Belum ada data untuk ditampilkan." /> : <div className="stat-detail-list">
+          {items.map((item, index) => {
+            const isActivity = stat.key === 'activities' || stat.key === 'thisMonth'
+            const person = !isActivity && item
+            return <article className="stat-detail-item" key={`${item.id || item.name}-${index}`}>
+              <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
+              <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4>{isActivity && <p>{`${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}`}</p>}</div>
+              {isActivity ? <div className="stat-detail-actions">
+                <button type="button" className="text-button" onClick={() => setActivityDetail(item)}>Detail</button>
+              </div> : <div className="stat-detail-actions">
+                <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>
+                {!person.completeness?.isComplete && <div className="stat-detail-buttons">
+                  <button type="button" className="text-button" onClick={() => setDetailPerson(person)}>Detail</button>
+                  <button type="button" className="text-button" onClick={() => { onClose(); onNavigate?.('fasilitator-edit', person.id, 'dashboard') }}>Edit</button>
+                </div>}
+              </div>}
+            </article>
+          })}
+        </div>}
+      </div>
+    </Modal>
+    <Modal open={Boolean(detailPerson)} onClose={() => setDetailPerson(null)} title="Detail Data Belum Lengkap">
+      {detailPerson && <div className="completeness-detail completeness-detail-modal">
+        <div className="completeness-hero">
+          <div className="completeness-avatar">{(detailPerson.name || '?').charAt(0).toUpperCase()}</div>
+          <div><span className="completeness-kicker">PROFIL FASILITATOR</span><h3>{formatFacilitatorName(detailPerson)}</h3><p>Lengkapi data berikut agar profil fasilitator siap digunakan.</p></div>
+        </div>
+        <div className="completeness-progress">
+          <div><span>Kelengkapan profil</span><strong>{completedFields}/6 terisi</strong></div>
+          <div className="completeness-progress-track"><span style={{ width: `${(completedFields / 6) * 100}%` }} /></div>
+        </div>
+        <div className="missing-fields-heading"><span className="missing-fields-icon">!</span><div><strong>{missingFields.length} data perlu dilengkapi</strong><small>Periksa kembali bagian berikut</small></div></div>
+                <div className="missing-fields-list">{missingFields.map((item) => <div className="missing-field-card" key={item}><span className="missing-field-check">!</span><span className="missing-field-copy"><strong>{item}</strong><small>Belum tersedia</small></span><button type="button" className="missing-field-add" onClick={() => setQuickAdd({ key: Object.entries(detailPerson.completeness?.checks || {}).find(([key]) => (completenessLabels[key] || key) === item)?.[0], label: item })}>Tambah</button></div>)}</div>
+        <div className="modal-footer">
+          <button type="button" className="primary-button" onClick={() => { setDetailPerson(null); onClose(); onNavigate?.('fasilitator-edit', detailPerson.id, 'dashboard') }}>Edit Data</button>
+          <button type="button" className="outline-button" onClick={() => setDetailPerson(null)}>Tutup</button>
+        </div>
       </div>}
-    </div>
+    </Modal>
+    <Modal open={Boolean(activityDetail)} onClose={() => setActivityDetail(null)} title="Detail Pelatihan">
+      {activityDetail && <div className="training-detail-modal">
+        <div className="training-detail-hero">
+          <span className="training-detail-icon">▣</span>
+          <div><span className="completeness-kicker">DETAIL KEGIATAN</span><h3>{activityDetail.name}</h3><p>{activityDetail.facilitator || 'Fasilitator belum tercatat'}</p></div>
+        </div>
+        <div className="training-detail-grid">
+          <div><span>Tanggal</span><strong>{formatAgendaDate(activityDetail.startDate, activityDetail.endDate).day} {formatAgendaDate(activityDetail.startDate, activityDetail.endDate).month}</strong></div>
+          <div><span>Materi / Mata Pelatihan</span><strong>{activityDetail.material || 'Belum diisi'}</strong></div>
+          <div><span>Penyelenggara</span><strong>{activityDetail.organizer || 'Belum diisi'}</strong></div>
+          <div><span>Jumlah Peserta</span><strong>{activityDetail.participantCount ?? 'Belum diisi'}</strong></div>
+        </div>
+        <div className="modal-footer"><button type="button" className="outline-button" onClick={() => setActivityDetail(null)}>Tutup</button></div>
+      </div>}
+    </Modal>
+    <QuickAddModal person={detailPerson} field={quickAdd} onClose={() => setQuickAdd(null)} onSaved={() => { setQuickAdd(null); setDetailPerson(null); onClose(); window.dispatchEvent(new CustomEvent('upelkes:data-changed')) }} />
+  </>
+}
+
+function QuickAddModal({ person, field, onClose, onSaved }) {
+  const [file, setFile] = useState(null)
+  const [form, setForm] = useState({ institution: '', degree: '', graduationYear: '', name: '', material: '', date: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  if (!person || !field) return null
+
+  async function save(event) {
+    event.preventDefault()
+    setSaving(true); setError('')
+    try {
+      if (['photo', 'signature', 'certificate', 'supporting'].includes(field.key)) {
+        if (!file) throw new Error('Pilih file terlebih dahulu.')
+        if (field.key === 'photo') await uploadFacilitatorPhoto(person.id, file)
+        if (field.key === 'signature') await uploadFacilitatorSignature(person.id, file)
+        if (field.key === 'certificate') await uploadFacilitatorCertificate(person.id, file)
+        if (field.key === 'supporting') await uploadFacilitatorSupporting(person.id, file)
+      } else if (field.key === 'education') {
+        if (!form.institution.trim()) throw new Error('Nama institusi wajib diisi.')
+        await createEducation(person.id, { institution: form.institution.trim(), degree: form.degree.trim(), graduationYear: form.graduationYear ? Number(form.graduationYear) : null })
+      } else if (field.key === 'material') {
+        if (!form.name.trim() || !form.material.trim() || !form.date) throw new Error('Nama kegiatan, materi, dan tanggal wajib diisi.')
+        await createTraining(person.id, { name: form.name.trim(), material: form.material.trim(), date: form.date, startDate: form.date, endDate: form.date, category: 'teaching_experience' })
+      }
+      onSaved()
+    } catch (saveError) { setError(saveError.message) } finally { setSaving(false) }
+  }
+
+  const uploadField = ['photo', 'signature', 'certificate', 'supporting'].includes(field.key)
+  return <Modal open onClose={() => !saving && onClose()} title={`Tambah ${field.label}`}>
+    <form className="quick-add-form" onSubmit={save}>
+      <div className="quick-add-heading"><span className="quick-add-icon">+</span><div><strong>Lengkapi {field.label}</strong><small>{formatFacilitatorName(person)}</small></div></div>
+      {error && <div className="form-error">{error}</div>}
+      {uploadField ? <label className="quick-file-field"><span>Pilih file</span><input type="file" accept={field.key === 'certificate' || field.key === 'supporting' ? '.pdf,.jpg,.jpeg,.png,.webp' : '.jpg,.jpeg,.png,.webp'} onChange={(event) => setFile(event.target.files?.[0] || null)} required /><small>{file?.name || 'Belum ada file dipilih'}</small></label> : field.key === 'education' ? <div className="quick-add-fields"><label className="form-field"><span>Institusi / Sekolah</span><input value={form.institution} onChange={(event) => setForm({ ...form, institution: event.target.value })} placeholder="Nama universitas atau lembaga" required /></label><label className="form-field"><span>Jenjang / Program Studi</span><input value={form.degree} onChange={(event) => setForm({ ...form, degree: event.target.value })} placeholder="Contoh: S2 Administrasi Publik" /></label><label className="form-field"><span>Tahun Lulus</span><input type="number" min="1900" max="2100" value={form.graduationYear} onChange={(event) => setForm({ ...form, graduationYear: event.target.value })} /></label></div> : <div className="quick-add-fields"><label className="form-field"><span>Nama Pelatihan/Kegiatan</span><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></label><label className="form-field"><span>Materi / Mata Pelatihan</span><input value={form.material} onChange={(event) => setForm({ ...form, material: event.target.value })} required /></label><label className="form-field"><span>Tanggal</span><input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} required /></label></div>}
+      <div className="modal-footer"><button type="submit" className="primary-button" disabled={saving}>{saving ? 'Menyimpan...' : 'Tambah Data'}</button><button type="button" className="outline-button" onClick={onClose} disabled={saving}>Batal</button></div>
+    </form>
   </Modal>
 }
 

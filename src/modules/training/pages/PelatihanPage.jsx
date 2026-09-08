@@ -355,11 +355,11 @@ export function PelatihanPage({ onNavigate }) {
       </Modal>
 
       <div className="panel">
-        <div className="panel-heading">
-          <h3>Daftar Bidang Pelatihan</h3>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="outline-button" onClick={exportTrainings} disabled={!filtered.length} style={{ marginTop: 0 }}>Export CSV</button>
-            <div className="search">
+        <div className="training-table-heading">
+          <div><p className="eyebrow">KATALOG KEGIATAN</p><h3>Daftar Bidang Pelatihan</h3></div>
+          <div className="training-table-tools">
+            <button className="outline-button export-csv-button" onClick={exportTrainings} disabled={!filtered.length}><span>⇩</span> Export CSV</button>
+            <div className="search training-search">
               <span>⌕</span>
               <input aria-label="Cari bidang pelatihan" placeholder="Cari bidang atau fasilitator..." value={query} onChange={(e) => setQuery(e.target.value)} />
             </div>
@@ -379,12 +379,9 @@ export function PelatihanPage({ onNavigate }) {
           <div className="training-card-grid">
             {competencyCards.map((card) => <article className="training-card" key={card.name} role="button" tabIndex={0} onClick={() => openGroupDetail(card.name)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openGroupDetail(card.name) } }}>
                 <div className="training-card-main">
-                  <span className="eyebrow">BIDANG PELATIHAN</span>
                   <h3>{card.name}</h3>
-                  <p>Bidang materi / keahlian fasilitator</p>
-                  <strong>{card.facilitators.length ? `${card.facilitators.length} fasilitator terdaftar` : 'Belum ada fasilitator'}</strong>
                 </div>
-                <div className="training-card-facilitators">{card.facilitators.length ? card.facilitators.map((item) => <span key={item.id}>{formatFacilitatorName(item)}</span>) : <span className="muted">Belum ada fasilitator di bidang ini</span>}</div>
+                {card.facilitators.length > 0 && <div className="training-card-facilitators">{card.facilitators.map((item) => <span key={item.id}>{formatFacilitatorName(item)}</span>)}</div>}
                 <div className="training-card-actions"><span className="text-button">Lihat fasilitator →</span></div>
               </article>)}
           </div>
@@ -402,8 +399,8 @@ export function PelatihanPage({ onNavigate }) {
                 <span className="training-facilitator-rating">★ {item.rating?.average ?? '—'} <small>({item.rating?.count ?? 0} ulasan)</small></span>
               </div>
               <div className="training-facilitator-contacts">
-                {item.phone && <a href={toWhatsAppLink(item.phone)} target="_blank" rel="noreferrer" className="detail-contact-button wa" aria-label={`WhatsApp ${formatFacilitatorName(item)}`} title="Hubungi lewat WhatsApp">⌾</a>}
-                {item.email && <a href={toEmailLink(item.email, formatFacilitatorName(item))} target="_blank" rel="noreferrer" className="detail-contact-button email" aria-label={`Email ${formatFacilitatorName(item)}`} title="Tulis email ke fasilitator">✉</a>}
+                {item.phone && <a href={toWhatsAppLink(item.phone)} target="_blank" rel="noreferrer" className="detail-contact-button wa" aria-label={`WhatsApp ${formatFacilitatorName(item)}`} title="Hubungi lewat WhatsApp"><img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /></a>}
+                {item.email && <a href={toEmailLink(item.email, formatFacilitatorName(item))} target="_blank" rel="noreferrer" className="detail-contact-button email" aria-label={`Email ${formatFacilitatorName(item)}`} title="Tulis email ke fasilitator"><img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /></a>}
               </div>
             </div>
           )) : <p className="muted">Belum ada fasilitator yang memiliki bidang ini.</p>}
@@ -432,12 +429,12 @@ export function PelatihanPage({ onNavigate }) {
               <div className="th-contact-actions">
                 {detailRow.facilitatorPhone && (
                   <a href={toWhatsAppLink(detailRow.facilitatorPhone)} target="_blank" rel="noreferrer" className="detail-contact-button wa">
-                    ⌾ WhatsApp
+                    <img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /> WhatsApp
                   </a>
                 )}
                 {detailRow.facilitatorEmail && (
                   <a href={toEmailLink(detailRow.facilitatorEmail, detailRow.facilitatorName)} target="_blank" rel="noreferrer" className="detail-contact-button email">
-                    ✉ Email
+                    <img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /> Email
                   </a>
                 )}
                 <button type="button" className="th-cv-button" onClick={() => onNavigate?.('fasilitator-cv', detailRow.facilitatorId, 'pelatihan')}>
