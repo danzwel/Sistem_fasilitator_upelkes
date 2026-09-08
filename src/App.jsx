@@ -14,6 +14,8 @@ import { PelatihanPage } from './modules/training/pages/PelatihanPage'
 import { ImportExcelPage } from './modules/fasilitator/pages/ImportExcelPage'
 import { ImportPelatihanExcelPage } from './modules/training/pages/ImportPelatihanExcelPage'
 import { SettingsPage } from './modules/settings/pages/SettingsPage'
+import { LoginPage } from './modules/auth/pages/LoginPage'
+import { clearAuth, getAuthToken } from './shared/api/client'
 
 const pages = {
   dashboard: { label: 'Dashboard', component: DashboardPage },
@@ -52,6 +54,7 @@ const initialRoute = () => {
 }
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState(() => Boolean(getAuthToken()))
   const [route] = useState(initialRoute)
   const [activePage, setActivePage] = useState(route.activePage || 'dashboard')
   const [selectedFacilitatorId, setSelectedFacilitatorId] = useState(route.selectedFacilitatorId || null)
@@ -62,13 +65,21 @@ export default function App() {
 
   useEffect(() => {
     const refresh = () => setSessionVersion((value) => value + 1)
+    const expire = () => { clearAuth(); setAuthenticated(false) }
+    const authChanged = () => setAuthenticated(Boolean(getAuthToken()))
+    const dataChanged = () => setSessionVersion((value) => value + 1)
     window.addEventListener('upelkes:auth-expired', refresh)
-    return () => window.removeEventListener('upelkes:auth-expired', refresh)
+    window.addEventListener('upelkes:auth-expired', expire)
+    window.addEventListener('upelkes:auth-changed', authChanged)
+    window.addEventListener('upelkes:data-changed', dataChanged)
+    return () => { window.removeEventListener('upelkes:auth-expired', refresh); window.removeEventListener('upelkes:auth-expired', expire); window.removeEventListener('upelkes:auth-changed', authChanged); window.removeEventListener('upelkes:data-changed', dataChanged) }
   }, [])
 
   useEffect(() => {
+    if (!authenticated) return
     getDashboardSummary().then(setDashboard).catch((error) => console.error('Gagal memuat dashboard:', error))
-  }, [activePage])
+  }, [activePage, authenticated, sessionVersion])
+  if (!authenticated) return <LoginPage onLogin={() => setAuthenticated(true)} />
   const page = pages[activePage]
   const Page = page.component
 
@@ -84,12 +95,20 @@ export default function App() {
     localStorage.setItem(APP_STATE_KEY, JSON.stringify({ activePage: pageId, selectedFacilitatorId: facilitatorId, cvReturnTo: nextReturnTo, editReturnTo: nextEditReturnTo }))
   }
 
+  function handleLogout() {
+    clearAuth()
+    setActivePage('dashboard')
+    setSelectedFacilitatorId(null)
+    setAuthenticated(false)
+    localStorage.removeItem(APP_STATE_KEY)
+  }
+
   const pageKey = REMOUNT_ON_FACILITATOR_CHANGE.includes(activePage)
     ? `${activePage}-${selectedFacilitatorId ?? 'new'}`
     : activePage
 
   return (
-    <AppShell activePage={activePage} onNavigate={handleNavigate} notifications={dashboard.notifications}>
+    <AppShell activePage={activePage} onNavigate={handleNavigate} onLogout={handleLogout} notifications={dashboard.notifications}>
       <Page
         key={pageKey}
         data={dashboard}

@@ -116,12 +116,12 @@ export function FacilitatorDetailModal({ facilitatorId, onClose, onNavigate }) {
               <div className="detail-facilitator-actions">
                 {facilitator.phone && (
                   <a href={toWhatsAppLink(facilitator.phone)} target="_blank" rel="noreferrer" className="detail-contact-button wa">
-                    ⌾ WhatsApp
+                    <img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /> WhatsApp
                   </a>
                 )}
                 {facilitator.email && (
                   <a href={toEmailLink(facilitator.email, formatFacilitatorName(facilitator))} target="_blank" rel="noreferrer" className="detail-contact-button email">
-                    ✉ Email
+                    <img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /> Email
                   </a>
                 )}
               </div>

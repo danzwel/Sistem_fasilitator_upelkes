@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const navIcons = {
   dashboard: (
@@ -24,9 +24,12 @@ const navItems = [
   ['pelatihan', navIcons.pelatihan, 'Pelatihan'],
 ]
 
-export function AppShell({ activePage, onNavigate, children, notifications: notificationData }) {
+export function AppShell({ activePage, onNavigate, onLogout, children, notifications: notificationData }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const notificationRef = useRef(null)
+  const userMenuRef = useRef(null)
   const [readNotificationIds, setReadNotificationIds] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('upelkes:read-notifications') || '[]')) } catch { return new Set() }
   })
@@ -45,11 +48,25 @@ export function AppShell({ activePage, onNavigate, children, notifications: noti
       return next
     })
   }
+  function logout() {
+    setUserMenuOpen(false)
+    onLogout?.()
+  }
 
   // Close sidebar on navigation (mobile)
   useEffect(() => {
     setIsSidebarOpen(false)
   }, [activePage])
+
+  useEffect(() => {
+    if (!notificationsOpen && !userMenuOpen) return undefined
+    function closeOnOutsideClick(event) {
+      if (notificationsOpen && !notificationRef.current?.contains(event.target)) setNotificationsOpen(false)
+      if (userMenuOpen && !userMenuRef.current?.contains(event.target)) setUserMenuOpen(false)
+    }
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
+  }, [notificationsOpen, userMenuOpen])
 
   // Prevent scroll when sidebar is open on mobile
   useEffect(() => {
@@ -72,8 +89,7 @@ export function AppShell({ activePage, onNavigate, children, notifications: noti
 
       <aside className={`sidebar ${isSidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="brand">
-          <span className="brand-mark">U</span>
-          <span className="brand-text">UPELKES</span>
+          <img className="brand-logo" src="/logo-upelkes.png" alt="UPELKES" />
         </div>
 
         <nav aria-label="Navigasi utama">
@@ -121,7 +137,7 @@ export function AppShell({ activePage, onNavigate, children, notifications: noti
           </div>
 
           <div className="topbar-actions">
-            <div className="notification-wrap">
+            <div className="notification-wrap" ref={notificationRef}>
             <button className="icon-button" aria-label="Notifikasi" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((open) => !open)}>
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -140,7 +156,13 @@ export function AppShell({ activePage, onNavigate, children, notifications: noti
             )}
             </div>
 
-            <div className="avatar" title="Admin Profil">AD</div>
+            <div className="user-menu-wrap" ref={userMenuRef}>
+              <button type="button" className="avatar avatar-button" title="Menu akun" aria-label="Menu akun" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen((open) => !open)}>AD</button>
+              {userMenuOpen && <div className="user-menu">
+                <div className="user-menu-heading"><span className="user-menu-avatar">AD</span><span><strong>Admin UPELKES</strong><small>Administrator</small></span></div>
+                <button type="button" className="user-menu-logout" onClick={logout}><span>↪</span> Keluar dari Sistem</button>
+              </div>}
+            </div>
           </div>
         </header>
 

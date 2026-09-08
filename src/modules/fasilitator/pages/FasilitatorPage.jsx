@@ -22,6 +22,12 @@ export function FasilitatorPage({ onNavigate }) {
     loadData()
   }, [])
 
+  useEffect(() => {
+    const refresh = () => loadData()
+    window.addEventListener('upelkes:data-changed', refresh)
+    return () => window.removeEventListener('upelkes:data-changed', refresh)
+  }, [])
+
   useEffect(() => { const timer = setTimeout(() => { setDebouncedQuery(query); setPage(1) }, 250); return () => clearTimeout(timer) }, [query])
 
   async function loadData() {
@@ -90,10 +96,11 @@ export function FasilitatorPage({ onNavigate }) {
       </div>
 
       <div className="panel">
-        <div className="panel-heading">
-          <h3>Daftar Fasilitator</h3>
-          <button className="outline-button" onClick={exportFacilitators} disabled={!filtered.length}>Export CSV</button>
-          <div className="search">
+        <div className="fasilitator-table-heading">
+          <div><p className="eyebrow">DATA FASILITATOR</p><h3>Daftar Fasilitator</h3></div>
+          <div className="fasilitator-table-tools">
+          <button className="outline-button export-csv-button" onClick={exportFacilitators} disabled={!filtered.length}><span>⇩</span> Export CSV</button>
+          <div className="search fasilitator-search">
             <span>⌕</span>
             <input
               aria-label="Cari fasilitator"
@@ -101,6 +108,7 @@ export function FasilitatorPage({ onNavigate }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+          </div>
           </div>
         </div>
 
@@ -199,7 +207,7 @@ export function FasilitatorPage({ onNavigate }) {
               ))}
             </tbody>
           </table>
-          <div className="pagination"><button className="outline-button" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Sebelumnya</button><span>Halaman {page} dari {pageCount}</span><button className="outline-button" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>Berikutnya</button></div>
+          <div className="pagination"><button className="pagination-button" aria-label="Halaman sebelumnya" title="Halaman sebelumnya" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>‹</button><span>Halaman {page} / {pageCount}</span><button className="pagination-button" aria-label="Halaman berikutnya" title="Halaman berikutnya" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>›</button></div>
           </>
         )}
       </div>

@@ -120,12 +120,12 @@ export function SearchPage({ onSelectFacilitator, onNavigate, facilitatorId: inc
             <div className="search-result-contact-actions">
               {facilitator.phone && (
                 <a href={toWhatsAppLink(facilitator.phone)} target="_blank" rel="noreferrer" className="detail-contact-button wa">
-                  ⌾ WhatsApp
+                  <img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /> WhatsApp
                 </a>
               )}
               {facilitator.email && (
                 <a href={`mailto:${facilitator.email}`} className="detail-contact-button email">
-                  ✉ Email
+                  <img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /> Email
                 </a>
               )}
             </div>
@@ -191,12 +191,12 @@ function TrainingHistoryModal({ facilitatorId, onClose, onNavigate }) {
             <div className="th-contact-actions">
               {facilitator.phone && (
                 <a href={toWhatsAppLink(facilitator.phone)} target="_blank" rel="noreferrer" className="detail-contact-button wa">
-                  ⌾ WhatsApp
+                  <img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /> WhatsApp
                 </a>
               )}
               {facilitator.email && (
                 <a href={`mailto:${facilitator.email}`} className="detail-contact-button email">
-                  ✉ Email
+                  <img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /> Email
                 </a>
               )}
               <button type="button" className="th-cv-button" onClick={() => onNavigate?.('fasilitator-cv', facilitatorId, 'pencarian')}>
