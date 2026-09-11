@@ -132,7 +132,7 @@ export function EducationSection({ facilitatorId }) {
       {formOpen && (
         <form
           onSubmit={handleSubmit}
-          style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 12, padding: 16, marginBottom: 16 }}
+          className="inline-form-panel"
         >
           {formError && (
             <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{formError}</div>

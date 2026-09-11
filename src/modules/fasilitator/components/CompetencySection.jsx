@@ -36,7 +36,7 @@ export function CompetencySection({ value = [], onChange, catalog = [] }) {
   return (
     <div className="panel" style={{ marginBottom: 18 }}>
       <div className="panel-heading">
-        <h3>Bidang Pelatihan / Keahlian</h3>
+        <h3>Materi / Mata Pelatihan yang Dikuasai</h3>
         {!formOpen && (
           <button type="button" className="text-button" onClick={() => setFormOpen(true)}>+ Tambah</button>
         )}
@@ -45,19 +45,19 @@ export function CompetencySection({ value = [], onChange, catalog = [] }) {
       {formOpen && (
         <form
           onSubmit={(e) => { e.preventDefault(); setFormOpen(false); setSearch(''); setDraftName('') }}
-          style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 12, padding: 16, marginBottom: 16 }}
+          className="competency-form"
         >
           <div className="competency-picker">
-            <label className="form-field"><span>Bidang pelatihan/keahlian (klik untuk memilih)</span><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari bidang pelatihan/keahlian..." /></label>
+            <label className="form-field"><span>Materi / mata pelatihan (klik untuk memilih)</span><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari materi atau mata pelatihan..." /></label>
             <div className="competency-chips">
               {options.map((name) => <button type="button" key={name} className={`competency-chip ${selectedNames.includes(name) ? 'selected' : ''}`} onClick={() => toggleItem(name)}>{name}</button>)}
               {options.length === 0 && <small className="muted">Tidak ada bidang yang cocok.</small>}
             </div>
             <div className="form-field">
-              <span>Tambah bidang baru</span>
+              <span>Tambah materi baru</span>
               <div style={{ display: 'flex', gap: 10, alignItems: 'stretch' }}>
-                <input style={{ flex: 1 }} type="text" value={draftName} onChange={(e) => setDraftName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomName() } }} placeholder="Ketik nama bidang baru" />
-                <button type="button" className="outline-button" onClick={addCustomName} disabled={!draftName.trim()} style={{ marginTop: 0, whiteSpace: 'nowrap' }}>＋ Tambah bidang</button>
+                <input style={{ flex: 1 }} type="text" value={draftName} onChange={(e) => setDraftName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomName() } }} placeholder="Ketik nama materi baru" />
+                <button type="button" className="outline-button" onClick={addCustomName} disabled={!draftName.trim()} style={{ marginTop: 0, whiteSpace: 'nowrap' }}>＋ Tambah materi</button>
               </div>
             </div>
           </div>
@@ -71,7 +71,7 @@ export function CompetencySection({ value = [], onChange, catalog = [] }) {
       )}
 
       {value.length === 0 ? (
-          <p className="muted" style={{ fontSize: 12 }}>Belum ada bidang pelatihan/keahlian ditambahkan.</p>
+          <p className="muted" style={{ fontSize: 12 }}>Belum ada materi/mata pelatihan yang ditambahkan ke fasilitator ini.</p>
       ) : (
         <div style={{ display: 'grid', gap: 2 }}>
           {value.map((item, i) => (
@@ -79,7 +79,7 @@ export function CompetencySection({ value = [], onChange, catalog = [] }) {
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{item.name}</div>
               </div>
-              <button type="button" className="text-button" style={{ color: '#e6a8bd' }} onClick={() => removeItem(i)}>
+              <button type="button" className="text-button danger-text" onClick={() => removeItem(i)}>
                 Hapus
               </button>
             </div>

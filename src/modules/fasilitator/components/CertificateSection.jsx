@@ -75,7 +75,7 @@ export function CertificateSection({ facilitatorId, embedded = false }) {
       {error && <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{error}</div>}
 
       {formOpen && (
-        <form onSubmit={handleSubmit} style={{ background: '#211a30', border: '1px solid #3e3451', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <form onSubmit={handleSubmit} className="inline-form-panel">
           <div className="form-grid">
             <label className="form-field">
               <span>Nama Sertifikat</span>

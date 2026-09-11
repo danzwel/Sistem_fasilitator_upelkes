@@ -284,7 +284,7 @@ export function ImportExcelPage({ onNavigate }) {
                         <select
                           value={r.action}
                           onChange={(e) => updateRowAction(i, e.target.value)}
-                          style={{ background: '#282139', border: '1px solid #382e4d', borderRadius: 8, padding: '5px 8px', color: '#f0ecff', fontSize: 12 }}
+                          className="import-cell-input"
                         >
                           <option value="skip">Lewati (skip)</option>
                           <option value="update">Update data lama</option>
