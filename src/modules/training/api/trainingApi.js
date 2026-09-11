@@ -43,6 +43,10 @@ export function getTrainingSubjects() {
   return request('/training-subjects')
 }
 
+export function getTrainingCatalog() {
+  return request('/training-catalog')
+}
+
 export function createTrainingSubject(name) {
   return request('/training-subjects', { method: 'POST', body: JSON.stringify({ name }) })
 }

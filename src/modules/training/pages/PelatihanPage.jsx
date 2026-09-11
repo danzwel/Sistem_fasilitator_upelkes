@@ -154,7 +154,26 @@ export function PelatihanPage({ onNavigate }) {
   const trainingCards = useMemo(() => {
     const q = query.trim().toLowerCase()
     const groups = new Map()
-    rows.forEach((row) => {
+    const competencyRows = facilitators.flatMap((facilitator) => (facilitator.competencies || [])
+      .filter((competency) => competency.trainingName?.trim() && competency.name?.trim())
+      .map((competency) => ({
+        id: `competency-${facilitator.id}-${competency.trainingName}-${competency.name}`,
+        facilitatorId: facilitator.id,
+        name: competency.trainingName.trim(),
+        material: competency.name.trim(),
+        category: 'teaching_experience',
+        facilitatorName: formatFacilitatorName(facilitator),
+        facilitatorPosition: facilitator.position,
+        facilitatorUnit: facilitator.unit,
+        facilitatorPhotoUrl: facilitator.photoUrl,
+        facilitatorPhone: facilitator.phone,
+        facilitatorEmail: facilitator.email,
+        facilitatorRating: facilitator.rating?.average ?? facilitator.averageRating ?? null,
+        facilitatorReviewCount: facilitator.rating?.count ?? facilitator.reviewCount ?? 0,
+        isCompetencyRelation: true,
+      })))
+    const relationRows = [...rows, ...competencyRows]
+    relationRows.forEach((row) => {
       if (categoryFilter !== 'all' && row.category !== categoryFilter) return
       const searchable = [row.name, row.material, row.facilitatorName, row.organizer].filter(Boolean).join(' ').toLowerCase()
       if (q && !searchable.includes(q)) return
@@ -173,7 +192,7 @@ export function PelatihanPage({ onNavigate }) {
         facilitators: [...new Map(material.rows.map((row) => [row.facilitatorId, row])).values()].sort((a, b) => a.facilitatorName.localeCompare(b.facilitatorName)),
       })),
     })).sort((a, b) => a.name.localeCompare(b.name))
-  }, [rows, query, categoryFilter])
+  }, [rows, facilitators, query, categoryFilter])
 
   const selectedGroup = trainingCards.find((card) => card.name === groupDetailName)
   const selectedMaterial = selectedGroup?.materials.find((material) => material.name === selectedMaterialName)
