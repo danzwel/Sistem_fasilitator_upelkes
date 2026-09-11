@@ -67,6 +67,7 @@ function validateRow(row, facilitatorByName) {
   const errors = []
   if (!row.namaPelatihan) errors.push('Nama Pelatihan kosong')
   if (!row.facilitatorName) errors.push('Nama Fasilitator kosong')
+  if (!row.date && !row.startDate && !row.tahun) errors.push('Tanggal/Tahun pelaksanaan kosong')
 
   let facilitatorId = null
   if (row.facilitatorName) {
@@ -164,6 +165,7 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
           endDate: row.data.endDate || row.data.startDate || row.data.date || buildDate(row.data.tahun, row.data.bulan),
           organizer: row.data.organizer ?? '',
           category: resolveCategory(row.data.category),
+          catalogOnly: false,
           ...(row.data.role ? { role: row.data.role } : {}),
         }
         await createTraining(row.facilitatorId, payload)
@@ -188,21 +190,25 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
     <section className="page-enter">
       <div className="welcome-row">
         <div>
-          <h2>Import Excel — Pelatihan</h2>
-          <p className="muted">Upload file, cek dulu hasil validasinya, baru konfirmasi import.</p>
+        <h2>Import Agenda Pelatihan</h2>
+          <p className="muted">Masukkan banyak agenda kegiatan pelatihan sekaligus dari file Excel.</p>
         </div>
         <button className="outline-button" onClick={() => onNavigate?.('pelatihan')}>← Kembali</button>
       </div>
 
       {!fileName && (
         <div className="panel">
-          <div className="panel-heading"><h3>1. Upload File Excel</h3></div>
-          <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Kolom yang dikenali: Tahun/Bulan atau Tanggal/Tanggal Mulai/Tanggal Selesai, Nama Pelatihan/Kegiatan (wajib),
-            Mata Pelatihan/Materi, Nama Fasilitator/Narasumber (wajib), Penyelenggara, Peran, Kategori/Jenis Pelatihan.
-          </p>
+          <div className="panel-heading"><div><p className="eyebrow">LANGKAH 1</p><h3>Upload File Agenda</h3></div><span className="import-step-badge">Excel</span></div>
+          <div className="import-guide-grid">
+            <div><strong>Kolom wajib</strong><p>Nama Pelatihan/Kegiatan, Nama Fasilitator/Narasumber, dan Tanggal atau Tahun pelaksanaan.</p></div>
+            <div><strong>Kolom tambahan</strong><p>Materi, Penyelenggara, Peran, Kategori/Jenis Pelatihan, dan Tanggal Selesai.</p></div>
+          </div>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFileSelect} />
-          <button className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+          <div className="excel-upload-box">
+            <div className="excel-upload-icon">⇧</div>
+            <div><strong>Pilih file Excel untuk mulai</strong><small>.xlsx atau .xls · Data akan divalidasi sebelum disimpan</small></div>
+            <button className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+          </div>
         </div>
       )}
 

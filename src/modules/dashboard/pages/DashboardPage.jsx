@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getFacilitators } from '../../fasilitator/api/facilitatorApi'
+import { getFacilitators, createFacilitator } from '../../fasilitator/api/facilitatorApi'
 import { uploadFacilitatorPhoto, uploadFacilitatorSignature, uploadFacilitatorSupporting, uploadFacilitatorCertificate } from '../../fasilitator/api/facilitatorUploadApi'
 import { createEducation } from '../../fasilitator/api/educationApi'
 import { createTraining, createTrainingReview } from '../../training/api/trainingApi'
@@ -50,17 +50,21 @@ export function DashboardPage({ data, onNavigate }) {
   const [selectedAgenda, setSelectedAgenda] = useState(null)
   const [allAgendaOpen, setAllAgendaOpen] = useState(false)
   const [selectedStat, setSelectedStat] = useState(null)
-  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', color: '#9f58cc' })
+  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' })
+
+  const agendaTrainingOptions = [...new Set((data?.allActivities || []).map((item) => item.name?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const agendaMaterialOptions = [...new Set((data?.allActivities || []).filter((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase()).map((item) => item.material?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const agendaFacilitatorOptions = [...new Set((data?.allActivities || []).filter((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase() && (!agendaForm.material.trim() || item.material?.trim().toLowerCase() === agendaForm.material.trim().toLowerCase())).map((item) => item.facilitator?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
   useEffect(() => { getFacilitators().then(setFacilitators).catch(() => setFacilitators([])) }, [])
   function openAgenda(day) {
     const date = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
+    setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
   }
   async function saveAgenda(event) {
-    event.preventDefault(); if (!agendaForm.name || !agendaForm.facilitatorId) return setAgendaError('Nama pelatihan dan fasilitator wajib dipilih.')
+    event.preventDefault(); if (!agendaForm.name.trim() || !agendaForm.material.trim() || !agendaForm.facilitatorName.trim()) return setAgendaError('Pelatihan, materi, dan fasilitator wajib diisi.')
     setAgendaSaving(true); setAgendaError('')
-    try { await createTraining(agendaForm.facilitatorId, { name: agendaForm.name, material: agendaForm.material, organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience' }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
+    try { let facilitatorId = agendaForm.facilitatorId; if (!facilitatorId) facilitatorId = (await createFacilitator({ name: agendaForm.facilitatorName.trim() })).id; await createTraining(facilitatorId, { name: agendaForm.name.trim(), material: agendaForm.material.trim(), organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience', catalogOnly: false }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
   }
   const handlePrevMonth = () => {
     if (calMonth === 0) {
@@ -228,9 +232,9 @@ export function DashboardPage({ data, onNavigate }) {
         <form onSubmit={saveAgenda}>
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
-            <SearchableInput id="agenda-facilitator" label={<>Fasilitator <span className="required-mark">*</span></>} value={facilitators.find((f) => String(f.id) === String(agendaForm.facilitatorId))?.name || ''} options={facilitators.map((f) => f.name)} placeholder="Ketik untuk mencari fasilitator..." required onChange={(value) => setAgendaForm((form) => ({ ...form, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
-            <label className="form-field"><span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span><input value={agendaForm.name} placeholder="Ketik nama pelatihan..." required onChange={(e) => setAgendaForm((form) => ({ ...form, name: e.target.value }))} /></label>
-            <label className="form-field"><span>Materi / Mata Pelatihan</span><input type="text" value={agendaForm.material} onChange={(e) => setAgendaForm((form) => ({ ...form, material: e.target.value }))} placeholder="Komunikasi Efektif" /></label>
+            <SearchableInput id="dashboard-agenda-training" label={<>Pelatihan <span className="required-mark">*</span></>} value={agendaForm.name} options={agendaTrainingOptions} placeholder="Pilih atau ketik nama pelatihan..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value, material: '', facilitatorName: '', facilitatorId: '' }))} />
+            <SearchableInput id="dashboard-agenda-material" label={<>Materi / Mata Pelatihan <span className="required-mark">*</span></>} value={agendaForm.material} options={agendaMaterialOptions} placeholder="Pilih atau ketik materi..." required onChange={(value) => setAgendaForm((form) => ({ ...form, material: value, facilitatorName: '', facilitatorId: '' }))} />
+            <SearchableInput id="dashboard-agenda-facilitator" label={<>Fasilitator <span className="required-mark">*</span></>} value={agendaForm.facilitatorName} options={agendaFacilitatorOptions.length ? agendaFacilitatorOptions : facilitators.map((f) => f.name)} placeholder="Pilih atau ketik fasilitator..." required onChange={(value) => { const match = facilitators.find((f) => f.name === value); setAgendaForm((form) => ({ ...form, facilitatorName: value, facilitatorId: match?.id || '' })) }} />
             <label className="form-field"><span>Penyelenggara</span><input type="text" value={agendaForm.organizer} onChange={(e) => setAgendaForm((form) => ({ ...form, organizer: e.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Mulai <span className="required-mark">*</span></span><input type="date" value={agendaForm.date} required onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={agendaForm.endDate} required onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} /></label>

@@ -6,7 +6,7 @@ import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { EducationSection } from '../components/EducationSection'
 import { CompetencySection } from '../components/CompetencySection'
 import { TrainingSection } from '../components/TrainingSection'
-import { getTrainingSubjects } from '../../training/api/trainingApi'
+import { getTrainingCatalog, getTrainings } from '../../training/api/trainingApi'
 
 const EMPTY_FORM = {
   nama: '', gelar: '', tempatLahir: '', tanggalLahir: '', nik: '', nip: '',
@@ -62,7 +62,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [competencies, setCompetencies] = useState([])
-  const [globalCompetencies, setGlobalCompetencies] = useState([])
+  const [trainingCatalog, setTrainingCatalog] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
@@ -77,9 +77,23 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
   const [existingSignatureUrl, setExistingSignatureUrl] = useState(null)
 
   useEffect(() => {
-    Promise.all([getFacilitators(), getTrainingSubjects()])
-      .then(([facilitators, subjects]) => setGlobalCompetencies([...new Set([...subjects, ...facilitators.flatMap((item) => (item.competencies || []).map((competency) => competency.name).filter(Boolean))])]))
-      .catch(() => setGlobalCompetencies([]))
+    async function loadTrainingOptions() {
+      const catalog = await getTrainingCatalog().catch(() => [])
+      const facilitators = await getFacilitators().catch(() => [])
+      const activityRows = (await Promise.all(facilitators.map((facilitator) => getTrainings(facilitator.id).catch(() => [])))).flat()
+      const merged = [...catalog]
+      for (const row of activityRows) {
+        const name = row.name?.trim()
+        if (!name) continue
+        let group = merged.find((item) => item.name.toLowerCase() === name.toLowerCase())
+        if (!group) { group = { name, materials: [] }; merged.push(group) }
+        const material = row.material?.trim()
+        if (material && !group.materials.some((item) => item.toLowerCase() === material.toLowerCase())) group.materials.push(material)
+      }
+      setTrainingCatalog(merged.sort((a, b) => a.name.localeCompare(b.name)))
+    }
+    loadTrainingOptions()
+      .catch(() => setTrainingCatalog([]))
   }, [facilitatorId])
 
   useEffect(() => {
@@ -230,7 +244,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         </div>
       </form>
 
-      <CompetencySection value={competencies} onChange={setCompetencies} catalog={globalCompetencies} />
+      <CompetencySection value={competencies} onChange={setCompetencies} trainingCatalog={trainingCatalog} />
 
       {isEdit && (
         <>

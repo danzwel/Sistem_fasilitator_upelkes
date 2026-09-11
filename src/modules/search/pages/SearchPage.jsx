@@ -69,7 +69,7 @@ export function SearchPage({ onSelectFacilitator, onNavigate, facilitatorId: inc
 
     <form onSubmit={submitActivitySearch} style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
       <input
-        style={{ flex: 1, background: '#282139', border: '1px solid #382e4d', borderRadius: 12, padding: '11px 14px', color: '#f0ecff' }}
+        className="search-input"
         placeholder="Contoh: Komunikasi Efektif, Posyandu, dsb."
         value={activityQuery}
         onChange={(e) => setActivityQuery(e.target.value)}

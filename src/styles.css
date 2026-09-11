@@ -878,6 +878,18 @@ nav {
 .competency-chip { border: 1px solid #4a3d5d; background: transparent; color: var(--text-primary); border-radius: 999px; padding: 7px 11px; font: inherit; font-size: 12px; cursor: pointer; transition: .15s ease; }
 .competency-chip:hover { border-color: #b76de6; color: #e4c2f4; }
 .competency-chip.selected { background: #287c6a; border-color: #287c6a; color: #f2fff9; }
+.selected-material-groups { display: grid; gap: 12px; margin-top: 14px; }
+.selected-material-group { padding: 13px 14px; border: 1px solid #ead6bd; border-radius: 12px; background: #fffaf3; }
+.selected-material-group > strong { display: block; color: #70482f; font-size: 12px; margin-bottom: 9px; }
+.competency-option-list, .selected-material-list { display: grid; gap: 6px; max-height: 250px; overflow-y: auto; border: 1px solid #ead6bd; border-radius: 11px; padding: 6px; background: #fffdf9; }
+.competency-list-row, .selected-material-list-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; border: 1px solid transparent; border-radius: 8px; padding: 10px 12px; background: transparent; color: #604b3e; text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+.competency-list-row:hover, .competency-list-row.selected { background: #f8ead7; border-color: #e5c69f; }
+.competency-list-row strong { flex: 0 0 auto; color: #9a795e; font-size: 11px; font-weight: 600; }
+.competency-list-row.add-row { background: #fff6e9; color: #8b5b2e; }
+.selected-material-list { max-height: 220px; }
+.selected-material-list-row { border-color: #f0dfcb; background: #fffaf3; cursor: default; }
+.selected-material-list-row + .selected-material-list-row { margin-top: 0; }
+.selected-material-list-row .text-button { flex: 0 0 auto; }
 
 @media (max-width: 640px) {
   .training-history-row { grid-template-columns: 150px minmax(0, 1fr); }
@@ -2260,6 +2272,151 @@ body { color: var(--text-primary); background: var(--bg-app); }
 .quick-add-form > .modal-footer { margin: 22px -30px -30px; padding: 17px 30px 22px; }
 @media (max-width: 560px) { .quick-add-form > .modal-footer { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; } }
 
+/* Global contrast cleanup: replace remaining legacy dark surfaces in the light theme. */
+.inline-form-panel,
+.certificate-form,
+.education-form,
+.training-form {
+  background: #fffaf2 !important;
+  border: 1px solid #ead8c5 !important;
+  color: #40332c;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.inline-form-panel input,
+.inline-form-panel select,
+.inline-form-panel textarea,
+.certificate-form input,
+.education-form input,
+.training-form input {
+  background: #fffdf9 !important;
+  border-color: #ddcdbb !important;
+  color: #40332c !important;
+}
+.search-input,
+.import-cell-input {
+  background: #fffdf9 !important;
+  border: 1px solid #ddcdbb !important;
+  color: #40332c !important;
+  border-radius: 10px;
+  padding: 11px 14px;
+}
+.import-cell-input { border-radius: 8px; padding: 5px 8px; font-size: 12px; }
+
+.modal-card,
+.detail-fields,
+.detail-facilitator-card,
+.detail-summary-chip,
+.document-preview-file,
+.notification-item.unread,
+.training-card,
+.activity-history-card,
+.all-agenda-item {
+  background: #fffefa !important;
+  border-color: #ddcdbb !important;
+  color: #40332c;
+}
+.modal-card::before { background: linear-gradient(90deg, #d9b66c, #a87532); }
+.modal-close { background: #f7ecdf !important; border-color: #c9b39c !important; color: #80644e !important; }
+.modal-footer,.detail-field { border-color: #eadfd1 !important; }
+.detail-summary-chip strong { color: #a2673e; }
+.detail-summary-chip span,.detail-label,.activity-history-main span,.activity-history-side small { color: #806e60; }
+.detail-value,.activity-history-main p,.all-agenda-info p { color: #40332c; }
+.document-preview-file { color: #8b5d3d; }
+.notification-item.unread { background: #fff4e8 !important; }
+.notification-item:hover { background: #f8e5d2 !important; }
+.training-card-facilitators span { background: #fff1dc !important; color: #76563f !important; }
+.training-card-main strong { color: #a2673e; }
+.all-agenda-date { color: #a2673e; }
+
+.status-badge.lengkap { background: #dcefe2 !important; color: #337351 !important; }
+.status-badge.belum_lengkap { background: #f5e1c4 !important; color: #9a622e !important; }
+.data-table tbody tr:hover { background: #fff8ef !important; }
+.data-table th { color: #806e60; }
+.data-table td { border-top-color: #eadfd1; }
+.form-field input { background: #fffdf9 !important; color: #40332c !important; border-color: #ddcdbb !important; }
+.document-preview-img,.document-preview-file { border-color: #ddcdbb !important; }
+
+/* Keep only intentionally branded areas dark; all content surfaces use the readable theme. */
+.panel,
+.stat-card,
+.training-banner,
+.table-panel,
+.search-form,
+.facilitator-card,
+.profile-panel,
+.module-state { color: #40332c; }
+
+/* Facilitator detail card: the old white-on-dark text was invisible on the light card. */
+.detail-facilitator-card .detail-facilitator-name {
+  color: #40332c !important;
+}
+.detail-facilitator-card .detail-facilitator-tag {
+  color: #a2673e !important;
+}
+.detail-facilitator-card .detail-facilitator-rating,
+.detail-facilitator-card .profile-rating {
+  color: #a2673e !important;
+}
+.detail-facilitator-card .detail-facilitator-rating small,
+.detail-facilitator-card .profile-rating span {
+  color: #806e60 !important;
+}
+.detail-contact-button.email {
+  background: #6b3e96;
+  border-color: #6b3e96;
+  color: #fffaf2;
+}
+
+.training-card-materials { display: grid; gap: 8px; margin-top: 16px; }
+.training-card-material { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid #ead8c5; border-radius: 9px; background: #fff8ef; }
+.training-card-material b { color: #40332c; font-size: 12px; }
+.training-card-material span { color: #a2673e; font-size: 11px; white-space: nowrap; }
+.training-material-detail { padding: 4px 0 12px; }
+.training-material-detail + .training-material-detail { border-top: 1px solid #eadfd1; padding-top: 15px; }
+.training-material-detail h4 { margin: 0 0 8px; color: #a2673e; font: 700 15px 'Jost', sans-serif; }
+.training-material-assignment-form { margin-top: 16px; padding: 14px; border: 1px solid #ead8c5; border-radius: 12px; background: #fffaf2; }
+.assignment-heading { display: grid; gap: 3px; margin-bottom: 12px; }
+.assignment-heading strong { color: #40332c; font-size: 14px; }
+.assignment-heading small { color: #806e60; font-size: 11px; }
+.material-assignment-row { position: relative; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(260px, 1.2fr); gap: 12px; padding: 12px 0; border-top: 1px solid #eadfd1; }
+.material-assignment-row:first-of-type { border-top: 0; }
+.facilitator-check-list { display: grid; gap: 6px; max-height: 130px; overflow: auto; padding: 9px; border: 1px solid #ddcdbb; border-radius: 9px; background: #fffdf9; }
+.facilitator-check { display: flex; align-items: center; gap: 7px; color: #40332c; font-size: 12px; font-weight: 400; }
+.facilitator-check input { accent-color: #a87532; }
+.assignment-remove { grid-column: 2; justify-self: start; margin-top: -4px; }
+.assignment-add { margin-top: 10px; padding: 8px 12px; }
+@media (max-width: 650px) { .material-assignment-row { grid-template-columns: 1fr; } .assignment-remove { grid-column: auto; } }
+.training-card { min-height: 150px; padding: 22px 24px 18px; display: flex; flex-direction: column; }
+.training-card-main h3 { margin-bottom: 0; font-size: 20px; }
+.training-card-actions { margin-top: auto; padding-top: 18px; }
+.training-card-actions .text-button { font-weight: 700; }
+.modal-intro { margin: 0 0 14px; color: #806e60; font-size: 13px; }
+.material-choice-list { display: grid; gap: 10px; }
+.material-choice { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; padding: 15px 16px; border: 1px solid #ead8c5; border-radius: 13px; background: #fffaf2; color: #40332c; text-align: left; cursor: pointer; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
+.material-choice:hover { border-color: #c99a70; background: #fff4e5; transform: translateY(-1px); }
+.material-choice span { display: grid; gap: 4px; }
+.material-choice b { font-size: 14px; }
+.material-choice small { color: #806e60; font-size: 11px; }
+.material-choice strong { color: #a2673e; font-size: 20px; }
+.material-back { margin-bottom: 14px; }
+.training-facilitator-list { display: grid; gap: 4px; }
+.training-facilitator-list .training-facilitator-row { padding: 12px 0; }
+.form-actions-row { display: flex; gap: 10px; margin-top: 14px; }
+@media (max-width: 520px) { .form-actions-row { flex-direction: column; } .form-actions-row button { width: 100%; } }
+.import-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 4px 0 18px; }
+.import-guide-grid > div { padding: 13px 14px; border: 1px solid #ead8c5; border-radius: 12px; background: #fffaf2; }
+.import-guide-grid strong { color: #40332c; font-size: 12px; }
+.import-guide-grid p { margin: 5px 0 0; color: #806e60; font-size: 12px; line-height: 1.5; }
+.import-step-badge { padding: 6px 10px; border-radius: 999px; background: #fff1dc; color: #a2673e; font-size: 11px; font-weight: 700; }
+.excel-upload-box { display: flex; align-items: center; gap: 13px; padding: 15px; border: 1px dashed #c9a978; border-radius: 14px; background: linear-gradient(135deg, #fffaf2, #fffdf9); }
+.excel-upload-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: #f5e5ca; color: #a2673e; font-size: 23px; font-weight: 700; }
+.excel-upload-box > div:nth-child(2) { display: grid; gap: 3px; flex: 1; }
+.excel-upload-box strong { color: #40332c; font-size: 13px; }
+.excel-upload-box small { color: #806e60; font-size: 11px; }
+@media (max-width: 650px) { .import-guide-grid { grid-template-columns: 1fr; } .excel-upload-box { align-items: flex-start; flex-wrap: wrap; } .excel-upload-box button { width: 100%; } }
+
 /* Login */
 .login-page { position: relative; min-height: 100vh; display: grid; place-items: center; overflow: hidden; padding: 24px; background: radial-gradient(circle at 15% 10%, #f8e8d2 0, transparent 32%), radial-gradient(circle at 90% 90%, #efd1c2 0, transparent 34%), #fffaf0; }
 .login-page::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(90,38,50,.08), transparent 45%, rgba(184,137,63,.08)); pointer-events: none; }
@@ -2473,6 +2630,80 @@ body { color: var(--text-primary); background: var(--bg-app); }
 .sidebar .nav-item.active { color: #fffaf2; background: linear-gradient(90deg, rgba(176, 132, 226, .28), rgba(91, 124, 203, .16)); box-shadow: inset 3px 0 0 #f2ca75; }
 .sidebar .nav-item.active .nav-icon { color: #ffe08e; }
 .sidebar .sidebar-bottom { border-top-color: #4b4779; }
+
+/* Readability pass: keep legacy dark component rules aligned with the cream theme. */
+.competency-form {
+  background: #fffaf2;
+  border: 1px solid #ead8c5;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.competency-form .form-field { color: #655246; }
+.competency-form .form-field input,
+.competency-form .form-field select,
+.competency-form .form-field textarea {
+  background: #fffdf9;
+  border-color: #ddcdbb;
+  color: #40332c;
+}
+.competency-form .form-field input::placeholder { color: #aa9787; }
+.competency-chip {
+  border-color: #d9c3aa;
+  background: #fffdf9;
+  color: #76563f;
+}
+.competency-chip:hover { border-color: #b8893f; color: #70482f; background: #fff4e5; }
+.competency-chip.selected { background: #287c6a; border-color: #287c6a; color: #f2fff9; }
+.danger-text { color: #b45f62 !important; }
+.danger-text:hover { color: #8f3f45 !important; }
+
+/* Legacy dark surfaces used by the other modules. */
+.training-card,
+.activity-history-card,
+.all-agenda-item,
+.detail-fields,
+.detail-facilitator-card,
+.search-form,
+.facilitator-card,
+.profile-panel,
+.module-state,
+.table-panel {
+  background: #fffefa;
+  border-color: #ddcdbb;
+  color: #40332c;
+}
+.training-card-main h3,
+.facilitator-card h3,
+.profile-panel h3,
+.activity-history-main h3,
+.all-agenda-info h4 { color: #40332c; }
+.training-card-main p,
+.training-card-main strong,
+.activity-history-main span,
+.all-agenda-info > small,
+.all-agenda-actions > small,
+.module-state small { color: #806e60; }
+.training-card-facilitators span,
+.tag-list span { background: #fff1dc; border-color: #e3cbae; color: #76563f; }
+.search-form input,
+.search-form select,
+.review-fields input,
+.review-fields select,
+.activity-history-card textarea {
+  background: #fffdf9;
+  border-color: #ddcdbb;
+  color: #40332c;
+}
+.filter-tabs button { background: #fffdf9; border-color: #d9c3aa; color: #76563f; }
+.filter-tabs .selected { background: #b8893f; border-color: #a87532; color: #fffaf2; }
+.table-panel th { color: #806e60; }
+.table-panel td { border-top-color: #eadfd1; }
+.table-panel td:first-child small { color: #968274; }
+.module-state { color: #806e60; }
+.module-state small { color: #968274; }
+.progress { background: #f1e6d9; }
+.pagination { border-top-color: #eadfd1; color: #806e60; }
 
 /* Keep the facilitator banner readable over any image crop. */
 .fasilitator-banner { background: linear-gradient(100deg, rgba(28, 16, 30, .9) 0%, rgba(48, 24, 36, .74) 56%, rgba(28, 16, 30, .56) 100%), url('/banner.jpg') center/cover no-repeat; border-color: #9a6b55; }
