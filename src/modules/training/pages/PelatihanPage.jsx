@@ -4,7 +4,7 @@ import { getTrainings, getTrainingSubjects, createTrainingSubject, createTrainin
 import { Modal } from '../../../shared/components/Modal'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
-import { formatFacilitatorName } from '../../../shared/utils/facilitator'
+import { completenessScore, formatFacilitatorName } from '../../../shared/utils/facilitator'
 
 const CATEGORY_LABEL = {
   related_training: 'Terkait Materi',
@@ -47,6 +47,12 @@ function toEmailLink(email, name = 'Fasilitator') {
   const subject = `Koordinasi kegiatan UPELKES - ${name}`
   const body = `Yth. ${name},\n\nSaya ingin menghubungi terkait kegiatan UPELKES.\n\nTerima kasih.`
   return `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
+
+function compareTrainingFacilitators(a, b) {
+  return (b.facilitatorCompletenessScore ?? 0) - (a.facilitatorCompletenessScore ?? 0)
+    || Number(b.facilitatorRating ?? 0) - Number(a.facilitatorRating ?? 0)
+    || String(a.facilitatorName || '').localeCompare(String(b.facilitatorName || ''))
 }
 
 export function PelatihanPage({ onNavigate }) {
@@ -118,6 +124,7 @@ export function PelatihanPage({ onNavigate }) {
               facilitatorEmail: f.email,
               facilitatorRating: f.rating?.average ?? f.averageRating ?? null,
               facilitatorReviewCount: f.rating?.count ?? f.reviewCount ?? 0,
+              facilitatorCompletenessScore: completenessScore(f),
             }))
           } catch {
             return []
@@ -170,6 +177,7 @@ export function PelatihanPage({ onNavigate }) {
         facilitatorEmail: facilitator.email,
         facilitatorRating: facilitator.rating?.average ?? facilitator.averageRating ?? null,
         facilitatorReviewCount: facilitator.rating?.count ?? facilitator.reviewCount ?? 0,
+        facilitatorCompletenessScore: completenessScore(facilitator),
         isCompetencyRelation: true,
       })))
     const relationRows = [...rows, ...competencyRows]
@@ -189,7 +197,7 @@ export function PelatihanPage({ onNavigate }) {
       ...group,
       materials: [...group.materials.values()].map((material) => ({
         ...material,
-        facilitators: [...new Map(material.rows.map((row) => [row.facilitatorId, row])).values()].sort((a, b) => a.facilitatorName.localeCompare(b.facilitatorName)),
+        facilitators: [...new Map(material.rows.map((row) => [row.facilitatorId, row])).values()].sort(compareTrainingFacilitators),
       })),
     })).sort((a, b) => a.name.localeCompare(b.name))
   }, [rows, facilitators, query, categoryFilter])

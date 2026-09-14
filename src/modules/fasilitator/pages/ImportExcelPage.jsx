@@ -19,6 +19,8 @@ const HEADER_ALIASES = {
   'unit kerja': 'unitKerja', 'satuan kerja': 'unitKerja', 'instansi': 'unitKerja',
   'alamat kantor': 'alamatKantor', 'alamat instansi': 'alamatKantor',
   'alamat rumah': 'alamatRumah', 'alamat domisili': 'alamatRumah',
+  pelatihan: 'trainingName', 'nama pelatihan': 'trainingName', 'pelatihan dikuasai': 'trainingName',
+  materi: 'material', 'materi pelatihan': 'material', 'materi yang dikuasai': 'material',
 }
 
 const REQUIRED_FIELDS = ['nama']
@@ -54,6 +56,20 @@ function isValidEmail(email) {
 
 function isValidPhone(phone) {
   return /^[\d+\-\s()]{8,15}$/.test(phone)
+}
+
+function splitValues(value) {
+  return String(value ?? '').split(/[;\n]/).map((item) => item.trim()).filter(Boolean)
+}
+
+function buildCompetencies(data) {
+  const trainings = splitValues(data.trainingName)
+  const materials = splitValues(data.material)
+  const trainingNames = [...new Set(trainings)]
+  const competencies = trainings.length
+    ? trainings.flatMap((training, index) => materials[index] ? [{ name: materials[index], trainingName: training }] : [])
+    : materials.map((material) => ({ name: material }))
+  return { competencies, trainingNames }
 }
 
 function validateRow(row, existingByKey, seenInFileKeys) {
@@ -186,6 +202,7 @@ export function ImportExcelPage({ onNavigate }) {
           homeAddress: row.data.alamatRumah,
           phone: row.data.noHp,
           email: row.data.email?.toLowerCase(),
+          ...buildCompetencies(row.data),
         }
         if (row.status === 'duplicate' && row.action === 'update') {
           await updateFacilitator(row.existingId, payload)
@@ -212,7 +229,7 @@ export function ImportExcelPage({ onNavigate }) {
 
   return (
     <section className="page-enter">
-      <div className="welcome-row">
+      <div className="welcome-row import-hero">
         <div>
           <h2>Import Excel</h2>
           <p className="muted">Upload file, cek dulu hasil validasinya, baru konfirmasi import.</p>
@@ -221,14 +238,19 @@ export function ImportExcelPage({ onNavigate }) {
       </div>
 
       {!fileName && (
-        <div className="panel">
-          <div className="panel-heading"><h3>1. Upload File Excel</h3></div>
-          <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Kolom yang dikenali: Nama (wajib), Email, No HP/WA, NIK, NIP, Gelar, Tempat/Kota Lahir,
-            Tanggal/Tgl Lahir, Pangkat/Golongan, Jabatan, Unit/Satuan Kerja, Alamat Kantor/Instansi, Alamat Rumah/Domisili.
-          </p>
+        <div className="panel import-step">
+          <div className="panel-heading"><h3><span className="import-step-number">1</span> Upload File Excel</h3></div>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFileSelect} />
-          <button className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+          <div className="import-upload-zone">
+            <div className="import-upload-icon" aria-hidden="true">↑</div>
+            <div className="import-upload-copy">
+              <strong>Mulai dari file Excel</strong>
+              <p>Pilih file .xlsx atau .xls berisi data fasilitator untuk diproses.</p>
+              <small>Kolom wajib: Nama · Pelatihan boleh diisi tanpa materi</small>
+            </div>
+            <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+          </div>
+          <p className="import-upload-note">Kolom yang dikenali: Nama, Email, No HP/WA, NIK, NIP, Gelar, Tempat/Kota Lahir, Tanggal/Tgl Lahir, Pangkat/Golongan, Jabatan, Unit/Satuan Kerja, Alamat Kantor/Instansi, Alamat Rumah/Domisili, Pelatihan, dan Materi. Pisahkan beberapa nilai dengan tanda titik koma (;).</p>
         </div>
       )}
 
@@ -248,22 +270,23 @@ export function ImportExcelPage({ onNavigate }) {
 
       {fileName && !parsing && !parseError && rows.length > 0 && !importResult && (
         <>
-          <div className="panel" style={{ marginBottom: 18 }}>
-            <div className="panel-heading"><h3>2. Hasil Validasi — {fileName}</h3></div>
-            <div style={{ display: 'flex', gap: 24, marginBottom: 8 }}>
-              <div><strong style={{ color: '#6fd6ae' }}>{summary.valid}</strong> <span className="muted">data valid</span></div>
-              <div><strong style={{ color: '#e6a866' }}>{summary.duplicate}</strong> <span className="muted">data duplikat</span></div>
-              <div><strong style={{ color: '#e6a8bd' }}>{summary.error}</strong> <span className="muted">data error</span></div>
+          <div className="panel import-step">
+            <div className="panel-heading"><h3><span className="import-step-number">2</span> Hasil Validasi <small className="import-file-name">{fileName}</small></h3></div>
+            <div className="import-summary-grid">
+              <div className="import-summary-card valid"><strong>{summary.valid}</strong><span>data valid</span></div>
+              <div className="import-summary-card duplicate"><strong>{summary.duplicate}</strong><span>data duplikat</span></div>
+              <div className="import-summary-card error"><strong>{summary.error}</strong><span>data error</span></div>
             </div>
           </div>
 
-          <div className="panel" style={{ marginBottom: 18 }}>
-            <div className="panel-heading"><h3>3. Detail per Baris</h3></div>
-            <table className="data-table">
+          <div className="panel import-step">
+            <div className="panel-heading"><h3><span className="import-step-number">3</span> Detail per Baris</h3></div>
+            <div className="import-table-wrap"><table className="data-table">
               <thead>
                 <tr>
                   <th>Nama</th>
                   <th>Email</th>
+                  <th>Pelatihan / Materi</th>
                   <th>Status</th>
                   <th>Catatan / Aksi</th>
                 </tr>
@@ -273,6 +296,7 @@ export function ImportExcelPage({ onNavigate }) {
                   <tr key={i}>
                     <td><div className="table-primary">{r.data.nama || '(kosong)'}</div></td>
                     <td><div className="table-secondary">{r.data.email || '-'}</div></td>
+                    <td><div className="table-primary">{r.data.trainingName || '-'}</div><div className="table-secondary">{r.data.material || 'Materi belum diisi'}</div></td>
                     <td>
                       <span className={`status-badge ${r.status === 'valid' ? 'lengkap' : 'belum_lengkap'}`}>
                         {r.status === 'valid' ? 'Valid' : r.status === 'duplicate' ? 'Duplikat' : 'Error'}
@@ -294,10 +318,10 @@ export function ImportExcelPage({ onNavigate }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="import-actions">
             <button className="primary-button" onClick={handleImport} disabled={importing || (summary.valid === 0 && summary.duplicate === 0)}>
               {importing ? 'Mengimport...' : 'Import Sekarang'}
             </button>
@@ -307,7 +331,7 @@ export function ImportExcelPage({ onNavigate }) {
       )}
 
       {importResult && (
-        <div className="panel">
+        <div className="panel import-result">
           <div className="panel-heading"><h3>Hasil Import</h3></div>
           <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
             <div><strong style={{ color: '#6fd6ae' }}>{importResult.created}</strong> <span className="muted">baru ditambahkan</span></div>

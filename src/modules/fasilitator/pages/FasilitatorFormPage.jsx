@@ -62,6 +62,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
 
   const [form, setForm] = useState(EMPTY_FORM)
   const [competencies, setCompetencies] = useState([])
+  const [trainingNames, setTrainingNames] = useState([])
   const [trainingCatalog, setTrainingCatalog] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(isEdit)
@@ -107,6 +108,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
           noHp: f.phone ?? '', email: f.email ?? '',
         })
         setCompetencies(f.competencies ?? [])
+        setTrainingNames(f.trainingNames ?? [])
         setExistingPhotoUrl(f.photoUrl ?? null)
         setExistingSignatureUrl(f.signatureUrl ?? null)
         setSupportingDocuments(f.supportingDocuments ?? [])
@@ -139,6 +141,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       ...form,
       birthInfo: combineBirthInfo(form.tempatLahir, form.tanggalLahir),
       competencies,
+      trainingNames,
       // Sengaja ikut kirim URL foto/TTD yang lama, supaya kalau backend
       // nganggep field yang nggak dikirim = dihapus, foto/TTD yang udah
       // ada nggak ke-null-in cuma gara-gara kamu edit field lain / cuma
@@ -244,7 +247,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         </div>
       </form>
 
-      <CompetencySection value={competencies} onChange={setCompetencies} trainingCatalog={trainingCatalog} />
+      <CompetencySection value={competencies} onChange={setCompetencies} trainingCatalog={trainingCatalog} trainingNames={trainingNames} onTrainingNamesChange={setTrainingNames} />
 
       {isEdit && (
         <>

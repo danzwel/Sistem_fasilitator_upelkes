@@ -6,6 +6,7 @@ export function validateFacilitator(input) {
   if (input.phone && !/^[+\d][\d\s-]{7,}$/.test(input.phone)) errors.phone = 'Nomor HP tidak valid.'
   if (input.status && !['active', 'inactive'].includes(input.status)) errors.status = 'Status tidak valid.'
   if (input.competencies && (!Array.isArray(input.competencies) || input.competencies.some((item) => (typeof item !== 'string' && !item?.name?.trim()) || (item?.startedTeachingYear != null && (!Number.isInteger(item.startedTeachingYear) || item.startedTeachingYear < 1900 || item.startedTeachingYear > new Date().getFullYear()))))) errors.competencies = 'Kompetensi harus berupa array nama atau objek { name, startedTeachingYear }.'
+  if (input.trainingNames && (!Array.isArray(input.trainingNames) || input.trainingNames.some((name) => typeof name !== 'string' || !name.trim()))) errors.trainingNames = 'Nama pelatihan harus berupa array teks.'
   return errors
 }
 export function validateTraining(input) {
