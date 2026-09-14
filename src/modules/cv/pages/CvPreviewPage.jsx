@@ -47,8 +47,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         setFacilitator(f)
         setEducations(edu)
         setRelatedTrainings(related)
-      const today = new Date().toISOString().slice(0, 10)
-      setTeachingExperience(teaching.filter((item) => !item.endDate || item.endDate <= today))
+      setTeachingExperience([...teaching].sort((a, b) => String(b.endDate || b.startDate || b.date || '').localeCompare(String(a.endDate || a.startDate || a.date || ''))))
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
@@ -60,7 +59,16 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
     const images = [...cvRef.current.querySelectorAll('img')]
     const originalSources = images.map((image) => image.src)
     const exportSources = [...originalSources]
+    const signatureBlock = cvRef.current.querySelector('.cv-signature-block')
+    const originalSignatureMargin = signatureBlock?.style.marginTop || ''
     try {
+      if (signatureBlock) {
+        const pageHeight = cvRef.current.clientWidth * (297 / 210)
+        const signatureBottom = signatureBlock.offsetTop + signatureBlock.offsetHeight
+        const remainder = signatureBottom % pageHeight
+        const extraSpace = remainder > 1 ? pageHeight - remainder : 0
+        signatureBlock.style.marginTop = `${36 + extraSpace}px`
+      }
       await Promise.all(images.map(async (image) => {
         if (!image.src || image.src.startsWith('data:')) return
         try {
@@ -86,11 +94,12 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         logging: false,
       })
       const filename = `CV-${(facilitator.name || 'fasilitator').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')}.pdf`
-      downloadCanvasAsPdf(canvas, filename)
+      downloadCanvasAsPdf(canvas, filename, cvRef.current)
     } catch (exportError) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
       images.forEach((image, index) => { image.src = originalSources[index] })
+      if (signatureBlock) signatureBlock.style.marginTop = originalSignatureMargin
       setExporting(false)
     }
   }
@@ -215,11 +224,12 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         {teachingExperience.length === 0 ? (
           <p className="cv-empty">Belum ada data.</p>
         ) : (
-          <table className="cv-list-table">
-            <thead><tr><th>No</th><th>Nama Pelatihan/Kegiatan</th><th>Peran</th><th>Penyelenggara</th><th>Tahun</th></tr></thead>
+          <table className="cv-list-table cv-experience-table">
+            <colgroup><col /><col /><col /><col /><col /></colgroup>
+            <thead><tr><th>No</th><th>Nama Pelatihan/Kegiatan</th><th>Materi</th><th>Penyelenggara</th><th>Tahun</th></tr></thead>
             <tbody>
               {teachingExperience.map((t, i) => (
-                <tr key={t.id ?? i}><td>{i + 1}</td><td>{t.name}</td><td>{t.role}</td><td>{t.organizer}</td><td>{t.date}</td></tr>
+                <tr key={t.id ?? i}><td>{i + 1}</td><td>{t.name}</td><td>{t.material || '-'}</td><td>{t.organizer || '-'}</td><td>{t.date || '-'}</td></tr>
               ))}
             </tbody>
           </table>
@@ -288,24 +298,37 @@ function loadImage(source) {
   })
 }
 
-function downloadCanvasAsPdf(canvas, filename) {
+function downloadCanvasAsPdf(canvas, filename, sourceElement) {
   const pdf = new jsPDF('p', 'mm', 'a4')
   const margin = 0
   const pageWidth = 210
   const pageHeight = 297
   const sourcePageHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
+  const scale = canvas.width / Math.max(1, sourceElement?.clientWidth || canvas.width)
+  const safeCuts = sourceElement
+    ? [...sourceElement.querySelectorAll('.cv-section-title, .cv-education-row, .cv-list-table tr')]
+      .flatMap((element) => [element.offsetTop * scale, (element.offsetTop + element.offsetHeight) * scale])
+      .filter((value) => value > 0 && value < canvas.height)
+      .sort((a, b) => a - b)
+    : []
   let sourceTop = 0
   let page = 0
 
   while (sourceTop < canvas.height) {
-    const sourceHeight = Math.min(sourcePageHeight, canvas.height - sourceTop)
+    const nominalEnd = Math.min(sourceTop + sourcePageHeight, canvas.height)
+    const isLastPage = nominalEnd >= canvas.height
+    const safeEnd = !isLastPage
+      ? safeCuts.filter((cut) => cut > sourceTop + canvas.width * 0.18 && cut <= nominalEnd).pop()
+      : null
+    const sourceEnd = safeEnd || nominalEnd
+    const sourceHeight = sourceEnd - sourceTop
     const pageCanvas = document.createElement('canvas')
     pageCanvas.width = canvas.width
     pageCanvas.height = sourceHeight
     pageCanvas.getContext('2d').drawImage(canvas, 0, sourceTop, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight)
     if (page > 0) pdf.addPage()
     pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', margin, margin, pageWidth, pageWidth * sourceHeight / canvas.width)
-    sourceTop += sourceHeight
+    sourceTop = sourceEnd
     page += 1
   }
   pdf.save(filename)

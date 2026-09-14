@@ -20,6 +20,7 @@ function toApiPayload(fasilitator) {
     signatureUrl: fasilitator.ttdUrl ?? fasilitator.signatureUrl ?? null,
     status: fasilitator.status ?? 'active',
     competencies: (fasilitator.kompetensi ?? fasilitator.competencies ?? []).map((item) => typeof item === 'string' ? item : { name: item.name, startedTeachingYear: item.startedTeachingYear ?? null, trainingName: item.trainingName ?? null }),
+    trainingNames: fasilitator.trainingNames ?? [],
   }
 }
 
