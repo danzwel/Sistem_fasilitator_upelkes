@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getFacilitators, createFacilitator } from '../../fasilitator/api/facilitatorApi'
-import { getTrainings, getTrainingSubjects, createTrainingSubject, createTraining, updateTraining, deleteTraining } from '../api/trainingApi'
+import { getTrainings, getTrainingSubjects, getTrainingCatalog, createTrainingSubject, createTraining, updateTraining, deleteTraining } from '../api/trainingApi'
 import { Modal } from '../../../shared/components/Modal'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
@@ -59,6 +59,7 @@ export function PelatihanPage({ onNavigate }) {
   const [facilitators, setFacilitators] = useState([])
   const [rows, setRows] = useState([])
   const [globalSubjects, setGlobalSubjects] = useState([])
+  const [trainingCatalog, setTrainingCatalog] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
@@ -73,8 +74,15 @@ export function PelatihanPage({ onNavigate }) {
   const [agendaError, setAgendaError] = useState(null)
   const [agendaSaving, setAgendaSaving] = useState(false)
 
-  const agendaTrainingOptions = [...new Set(rows.map((row) => row.name?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
-  const agendaMaterialOptions = [...new Set(rows.filter((row) => row.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase()).map((row) => row.material?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const agendaTrainingOptions = [...new Set([
+    ...trainingCatalog.map((item) => item.name?.trim()),
+    ...rows.map((row) => row.name?.trim()),
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const selectedCatalogTraining = trainingCatalog.find((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase())
+  const agendaMaterialOptions = [...new Set([
+    ...(selectedCatalogTraining?.materials || []),
+    ...rows.filter((row) => row.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase()).map((row) => row.material?.trim()),
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b))
   const agendaFacilitatorOptions = [...new Set(rows.filter((row) => row.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase() && (!agendaForm.material.trim() || row.material?.trim().toLowerCase() === agendaForm.material.trim().toLowerCase())).map((row) => row.facilitatorName?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
   const [detailKey, setDetailKey] = useState(null)
@@ -106,9 +114,10 @@ export function PelatihanPage({ onNavigate }) {
     setLoading(true)
     setError(null)
     try {
-      const [facilitatorList, subjects] = await Promise.all([getFacilitators(), getTrainingSubjects().catch(() => [])])
+      const [facilitatorList, subjects, catalog] = await Promise.all([getFacilitators(), getTrainingSubjects().catch(() => []), getTrainingCatalog().catch(() => [])])
       setFacilitators(facilitatorList)
       setGlobalSubjects(subjects)
+      setTrainingCatalog(Array.isArray(catalog) ? catalog : [])
       const perFacilitator = await Promise.all(
         facilitatorList.map(async (f) => {
           try {
