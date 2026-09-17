@@ -42,17 +42,19 @@ const FIELD_GROUPS = [
 
 function FileSlot({ label, previewUrl, onSelect }) {
   const inputRef = useRef(null)
+  const isPhoto = label === 'Foto'
   return (
     <label className="form-field">
       <span>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {previewUrl && <img src={previewUrl} alt={label} style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8 }} />}
+        {previewUrl && <img src={previewUrl} alt={label} style={{ width: isPhoto ? 45 : 56, height: isPhoto ? 60 : 56, objectFit: 'cover', borderRadius: 8 }} />}
         <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={(e) => onSelect(e.target.files?.[0] ?? null)} />
         <button type="button" className="outline-button" onClick={() => inputRef.current?.click()}>
           {previewUrl ? 'Ganti file' : 'Pilih file'}
         </button>
       </div>
+      {isPhoto && <small className="muted">Foto akan dipotong otomatis ke rasio 3×4.</small>}
     </label>
   )
 }
@@ -165,7 +167,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       const uploadWarnings = []
       if (photoFile) {
         setSubmitStep('Mengunggah foto...')
-        try { await uploadFacilitatorPhoto(savedId, photoFile) }
+        try { await uploadFacilitatorPhoto(savedId, await cropPhotoToThreeByFour(photoFile)) }
         catch (err) { uploadWarnings.push(`Foto gagal diunggah: ${err.message}`) }
       }
       if (signatureFile) {
@@ -287,4 +289,37 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       </div>
     </section>
   )
+}
+
+function cropPhotoToThreeByFour(file) {
+  return new Promise((resolve, reject) => {
+    const sourceUrl = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () => {
+      const targetRatio = 3 / 4
+      const sourceRatio = image.naturalWidth / image.naturalHeight
+      let sourceWidth = image.naturalWidth
+      let sourceHeight = image.naturalHeight
+      let sourceX = 0
+      let sourceY = 0
+      if (sourceRatio > targetRatio) {
+        sourceWidth = image.naturalHeight * targetRatio
+        sourceX = (image.naturalWidth - sourceWidth) / 2
+      } else {
+        sourceHeight = image.naturalWidth / targetRatio
+        sourceY = (image.naturalHeight - sourceHeight) / 2
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = 900
+      canvas.height = 1200
+      canvas.getContext('2d').drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(sourceUrl)
+        if (!blob) return reject(new Error('Foto tidak dapat diproses.'))
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() }))
+      }, 'image/jpeg', 0.92)
+    }
+    image.onerror = () => { URL.revokeObjectURL(sourceUrl); reject(new Error('Foto tidak dapat dibaca.')) }
+    image.src = sourceUrl
+  })
 }

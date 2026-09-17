@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getFacilitators, createFacilitator } from '../../fasilitator/api/facilitatorApi'
 import { uploadFacilitatorPhoto, uploadFacilitatorSignature, uploadFacilitatorSupporting, uploadFacilitatorCertificate } from '../../fasilitator/api/facilitatorUploadApi'
 import { createEducation } from '../../fasilitator/api/educationApi'
-import { createTraining, createTrainingReview } from '../../training/api/trainingApi'
+import { createTraining, createTrainingReview, getTrainingCatalog } from '../../training/api/trainingApi'
 import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { Modal } from '../../../shared/components/Modal'
@@ -18,6 +18,16 @@ function formatAgendaDate(startDate, endDate) {
   if (startDate === (endDate || startDate)) return { day: start.getDate(), month }
   const endMonth = monthNames[end.getMonth()].slice(0, 3)
   return { day: `${start.getDate()}–${end.getDate()}`, month: start.getMonth() === end.getMonth() ? month : `${month}–${endMonth}` }
+}
+
+function isActivityInMonth(activity, year, month) {
+  const start = activity.startDate || activity.date
+  const end = activity.endDate || start
+  if (!start || !end) return false
+  const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`
+  const nextMonth = new Date(year, month + 1, 1)
+  const monthEndExclusive = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-01`
+  return end >= monthStart && start < monthEndExclusive
 }
 
 // Map keys to SVG icons for stats
@@ -44,6 +54,7 @@ export function DashboardPage({ data, onNavigate }) {
   const [calMonth, setCalMonth] = useState(today.getMonth())
   const [calYear, setCalYear] = useState(today.getFullYear())
   const [facilitators, setFacilitators] = useState([])
+  const [trainingCatalog, setTrainingCatalog] = useState([])
   const [agendaOpen, setAgendaOpen] = useState(false)
   const [agendaSaving, setAgendaSaving] = useState(false)
   const [agendaError, setAgendaError] = useState('')
@@ -52,11 +63,21 @@ export function DashboardPage({ data, onNavigate }) {
   const [selectedStat, setSelectedStat] = useState(null)
   const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' })
 
-  const agendaTrainingOptions = [...new Set((data?.allActivities || []).map((item) => item.name?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
-  const agendaMaterialOptions = [...new Set((data?.allActivities || []).filter((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase()).map((item) => item.material?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const agendaTrainingOptions = [...new Set([
+    ...trainingCatalog.map((item) => item.name?.trim()),
+    ...(data?.allActivities || []).map((item) => item.name?.trim()),
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const selectedCatalogTraining = trainingCatalog.find((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase())
+  const agendaMaterialOptions = [...new Set([
+    ...(selectedCatalogTraining?.materials || []),
+    ...(data?.allActivities || []).filter((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase()).map((item) => item.material?.trim()),
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b))
   const agendaFacilitatorOptions = [...new Set((data?.allActivities || []).filter((item) => item.name?.trim().toLowerCase() === agendaForm.name.trim().toLowerCase() && (!agendaForm.material.trim() || item.material?.trim().toLowerCase() === agendaForm.material.trim().toLowerCase())).map((item) => item.facilitator?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
-  useEffect(() => { getFacilitators().then(setFacilitators).catch(() => setFacilitators([])) }, [])
+  useEffect(() => {
+    getFacilitators().then(setFacilitators).catch(() => setFacilitators([]))
+    getTrainingCatalog().then((catalog) => setTrainingCatalog(Array.isArray(catalog) ? catalog : [])).catch(() => setTrainingCatalog([]))
+  }, [])
   function openAgenda(day) {
     const date = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
@@ -204,7 +225,11 @@ export function DashboardPage({ data, onNavigate }) {
             {days.map((item, i) => {
               const isToday = isCurrentMonth && item.day === today.getDate()
               const cellDate = item.current ? `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(item.day).padStart(2, '0')}` : ''
-              const cellActivities = item.current ? (data.calendarActivities || []).filter((activity) => cellDate >= activity.startDate && cellDate <= activity.endDate) : []
+              const cellActivities = item.current ? (data.allActivities || data.calendarActivities || []).filter((activity) => {
+                const start = activity.startDate || activity.date
+                const end = activity.endDate || start
+                return start && end && cellDate >= start && cellDate <= end
+              }) : []
               return (
                 <button type="button" onClick={() => item.current && openAgenda(item.day)}
                   className={`${isToday ? 'today' : ''} ${!item.current ? 'outside' : ''}`}
@@ -218,8 +243,8 @@ export function DashboardPage({ data, onNavigate }) {
           </div>
 
           <p className="calendar-note">
-            {data.calendarActivities.length
-              ? `${data.calendarActivities.length} agenda tersimpan bulan ini`
+            {(data.allActivities || data.calendarActivities || []).filter((activity) => isActivityInMonth(activity, calYear, calMonth)).length
+              ? `${(data.allActivities || data.calendarActivities || []).filter((activity) => isActivityInMonth(activity, calYear, calMonth)).length} agenda tersimpan bulan ini`
               : 'Agenda kalender akan muncul dari database.'}
           </p>
         </section>

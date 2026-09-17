@@ -59,16 +59,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
     const images = [...cvRef.current.querySelectorAll('img')]
     const originalSources = images.map((image) => image.src)
     const exportSources = [...originalSources]
-    const signatureBlock = cvRef.current.querySelector('.cv-signature-block')
-    const originalSignatureMargin = signatureBlock?.style.marginTop || ''
     try {
-      if (signatureBlock) {
-        const pageHeight = cvRef.current.clientWidth * (297 / 210)
-        const signatureBottom = signatureBlock.offsetTop + signatureBlock.offsetHeight
-        const remainder = signatureBottom % pageHeight
-        const extraSpace = remainder > 1 ? pageHeight - remainder : 0
-        signatureBlock.style.marginTop = `${36 + extraSpace}px`
-      }
       await Promise.all(images.map(async (image) => {
         if (!image.src || image.src.startsWith('data:')) return
         try {
@@ -99,7 +90,6 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
       setError(`Gagal mengunduh PDF: ${exportError.message}`)
     } finally {
       images.forEach((image, index) => { image.src = originalSources[index] })
-      if (signatureBlock) signatureBlock.style.marginTop = originalSignatureMargin
       setExporting(false)
     }
   }
@@ -305,8 +295,8 @@ function downloadCanvasAsPdf(canvas, filename, sourceElement) {
   const pageHeight = 297
   const sourcePageHeight = Math.floor(canvas.width * (pageHeight / pageWidth))
   const scale = canvas.width / Math.max(1, sourceElement?.clientWidth || canvas.width)
-  const safeCuts = sourceElement
-    ? [...sourceElement.querySelectorAll('.cv-section-title, .cv-education-row, .cv-list-table tr')]
+    const safeCuts = sourceElement
+      ? [...sourceElement.querySelectorAll('.cv-section-title, .cv-education-row, .cv-list-table tr, .cv-signature-block')]
       .flatMap((element) => [element.offsetTop * scale, (element.offsetTop + element.offsetHeight) * scale])
       .filter((value) => value > 0 && value < canvas.height)
       .sort((a, b) => a - b)
