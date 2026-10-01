@@ -7,13 +7,13 @@ import { EducationSection } from '../components/EducationSection'
 import { CompetencySection } from '../components/CompetencySection'
 import { TrainingSection } from '../components/TrainingSection'
 import { getTrainingCatalog, getTrainings } from '../../training/api/trainingApi'
+import { Modal } from '../../../shared/components/Modal'
 
 const EMPTY_FORM = {
   nama: '', gelar: '', tempatLahir: '', tanggalLahir: '', nik: '', nip: '',
   pangkatGolongan: '', jabatan: '', unitKerja: '', alamatKantor: '', alamatRumah: '',
   noHp: '', email: '',
 }
-
 function combineBirthInfo(tempatLahir, tanggalLahir) {
   return [tempatLahir, tanggalLahir].filter(Boolean).join(', ')
 }
@@ -47,19 +47,18 @@ function FileSlot({ label, previewUrl, onSelect }) {
     <label className="form-field">
       <span>{label}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {previewUrl && <img src={previewUrl} alt={label} style={{ width: isPhoto ? 45 : 56, height: isPhoto ? 60 : 56, objectFit: 'cover', borderRadius: 8 }} />}
+        {previewUrl && <img src={previewUrl} alt={label} style={{ width: isPhoto ? 45 : 56, height: isPhoto ? 60 : 56, objectFit: isPhoto ? 'contain' : 'cover', background: '#fffaf2', borderRadius: 8 }} />}
         <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={(e) => onSelect(e.target.files?.[0] ?? null)} />
         <button type="button" className="outline-button" onClick={() => inputRef.current?.click()}>
           {previewUrl ? 'Ganti file' : 'Pilih file'}
         </button>
       </div>
-      {isPhoto && <small className="muted">Foto akan dipotong otomatis ke rasio 3×4.</small>}
     </label>
   )
 }
 
-export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fasilitator' }) {
+export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fasilitator', embedded = false, onSaved }) {
   const isEdit = Boolean(facilitatorId)
 
   const [form, setForm] = useState(EMPTY_FORM)
@@ -73,6 +72,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
   const [submitStep, setSubmitStep] = useState(null)
 
   const [photoFile, setPhotoFile] = useState(null)
+  const [photoCropFile, setPhotoCropFile] = useState(null)
   const [signatureFile, setSignatureFile] = useState(null)
   const [supportingFile, setSupportingFile] = useState(null)
   const [supportingDocuments, setSupportingDocuments] = useState([])
@@ -167,7 +167,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       const uploadWarnings = []
       if (photoFile) {
         setSubmitStep('Mengunggah foto...')
-        try { await uploadFacilitatorPhoto(savedId, await cropPhotoToThreeByFour(photoFile)) }
+        try { await uploadFacilitatorPhoto(savedId, photoFile) }
         catch (err) { uploadWarnings.push(`Foto gagal diunggah: ${err.message}`) }
       }
       if (signatureFile) {
@@ -188,7 +188,8 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         return
       }
 
-      onNavigate?.(isEdit ? 'fasilitator-detail' : 'fasilitator-edit', savedId)
+      if (onSaved) onSaved(savedId)
+      else onNavigate?.(isEdit ? 'fasilitator-detail' : 'fasilitator-edit', savedId)
     } catch (err) {
       setSubmitError(err.message)
       setSubmitting(false)
@@ -201,8 +202,9 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
   }
 
   return (
+    <>
     <section className="page-enter">
-      <div className="welcome-row">
+      {!embedded && <div className="welcome-row">
         <div>
           <h2>{isEdit ? 'Edit Fasilitator' : 'Tambah Fasilitator'}</h2>
           <p className="muted">Isi biodata, foto, TTD, materi, riwayat pendidikan, dan pengalaman mengajar.</p>
@@ -210,7 +212,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         <button className="outline-button" onClick={() => onNavigate?.(isEdit ? returnTo : 'fasilitator', facilitatorId)}>
           ← Kembali
         </button>
-      </div>
+      </div>}
 
       {submitError && (
         <div className="panel" style={{ borderColor: '#a84978', marginBottom: 18 }}>
@@ -238,7 +240,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         <div className="panel" style={{ marginBottom: 18 }}>
           <div className="panel-heading"><h3>Foto & TTD</h3></div>
           <div className="form-grid">
-            <FileSlot label="Foto" previewUrl={photoFile ? URL.createObjectURL(photoFile) : resolveAssetUrl(existingPhotoUrl)} onSelect={setPhotoFile} />
+            <FileSlot label="Foto" previewUrl={photoFile ? URL.createObjectURL(photoFile) : resolveAssetUrl(existingPhotoUrl)} onSelect={setPhotoCropFile} />
             <FileSlot label="TTD" previewUrl={signatureFile ? URL.createObjectURL(signatureFile) : resolveAssetUrl(existingSignatureUrl)} onSelect={setSignatureFile} />
           </div>
         </div>
@@ -280,7 +282,13 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       )}
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <button className="primary-button" type="submit" form="facilitator-form" disabled={submitting} style={{ marginTop: 0 }}>
+        <button
+          className="primary-button"
+          type="button"
+          disabled={submitting}
+          onClick={() => document.getElementById('facilitator-form')?.requestSubmit()}
+          style={{ marginTop: 0 }}
+        >
           {submitting ? (submitStep || 'Menyimpan...') : isEdit ? 'Simpan Perubahan' : 'Simpan Fasilitator'}
         </button>
         <button type="button" className="outline-button" onClick={() => onNavigate?.('fasilitator')} disabled={submitting}>
@@ -288,38 +296,70 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         </button>
       </div>
     </section>
+    {photoCropFile && <PhotoCropModal file={photoCropFile} onCancel={() => setPhotoCropFile(null)} onSave={(file) => { setPhotoFile(file); setPhotoCropFile(null) }} />}
+    </>
   )
 }
 
-function cropPhotoToThreeByFour(file) {
-  return new Promise((resolve, reject) => {
-    const sourceUrl = URL.createObjectURL(file)
+function PhotoCropModal({ file, onCancel, onSave }) {
+  const [source, setSource] = useState(null)
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const dragRef = useRef(null)
+  const frame = { width: 240, height: 320 }
+
+  useEffect(() => {
+    const url = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () => { setSource(url); setImageSize({ width: image.naturalWidth, height: image.naturalHeight }); setZoom(1); setOffset({ x: 0, y: 0 }) }
+    image.src = url
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const scale = imageSize.width && imageSize.height ? Math.max(frame.width / imageSize.width, frame.height / imageSize.height) : 1
+  const rendered = { width: imageSize.width * scale * zoom, height: imageSize.height * scale * zoom }
+  const limits = { x: Math.max(0, (rendered.width - frame.width) / 2), y: Math.max(0, (rendered.height - frame.height) / 2) }
+
+  function moveImage(event) {
+    if (!dragRef.current) return
+    const next = { x: dragRef.current.startX + event.clientX - dragRef.current.clientX, y: dragRef.current.startY + event.clientY - dragRef.current.clientY }
+    setOffset({ x: Math.min(limits.x, Math.max(-limits.x, next.x)), y: Math.min(limits.y, Math.max(-limits.y, next.y)) })
+  }
+
+  function startDrag(event) {
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    dragRef.current = { clientX: event.clientX, clientY: event.clientY, startX: offset.x, startY: offset.y }
+  }
+
+  function stopDrag() { dragRef.current = null }
+
+  function saveCrop() {
+    if (!source || !imageSize.width) return
     const image = new Image()
     image.onload = () => {
-      const targetRatio = 3 / 4
-      const sourceRatio = image.naturalWidth / image.naturalHeight
-      let sourceWidth = image.naturalWidth
-      let sourceHeight = image.naturalHeight
-      let sourceX = 0
-      let sourceY = 0
-      if (sourceRatio > targetRatio) {
-        sourceWidth = image.naturalHeight * targetRatio
-        sourceX = (image.naturalWidth - sourceWidth) / 2
-      } else {
-        sourceHeight = image.naturalWidth / targetRatio
-        sourceY = (image.naturalHeight - sourceHeight) / 2
-      }
       const canvas = document.createElement('canvas')
       canvas.width = 900
       canvas.height = 1200
-      canvas.getContext('2d').drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob((blob) => {
-        URL.revokeObjectURL(sourceUrl)
-        if (!blob) return reject(new Error('Foto tidak dapat diproses.'))
-        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg', lastModified: Date.now() }))
-      }, 'image/jpeg', 0.92)
+      const context = canvas.getContext('2d')
+      const displayScale = scale * zoom
+      const sourceX = Math.max(0, Math.min(imageSize.width - frame.width / displayScale, -offset.x / displayScale))
+      const sourceY = Math.max(0, Math.min(imageSize.height - frame.height / displayScale, -offset.y / displayScale))
+      context.drawImage(image, sourceX, sourceY, frame.width / displayScale, frame.height / displayScale, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob((blob) => blob && onSave(new File([blob], file.name.replace(/\.[^.]+$/, '') + '-3x4.jpg', { type: 'image/jpeg' })), 'image/jpeg', .92)
     }
-    image.onerror = () => { URL.revokeObjectURL(sourceUrl); reject(new Error('Foto tidak dapat dibaca.')) }
-    image.src = sourceUrl
-  })
+    image.src = source
+  }
+
+  return <Modal open title="Atur Foto 3 × 4" onClose={onCancel}>
+    <div className="photo-cropper">
+      <p className="modal-intro">Geser foto untuk menentukan posisi yang paling sesuai.</p>
+      <div className="photo-crop-frame" style={{ width: frame.width, height: frame.height }} onPointerDown={startDrag} onPointerMove={moveImage} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
+        {source && <img src={source} alt="Pratinjau foto" draggable="false" style={{ width: rendered.width, height: rendered.height, left: (frame.width - rendered.width) / 2 + offset.x, top: (frame.height - rendered.height) / 2 + offset.y }} />}
+      </div>
+      <label className="photo-crop-zoom"><span>Perbesar foto</span><input type="range" min="1" max="2.5" step="0.01" value={zoom} onChange={(event) => { setZoom(Number(event.target.value)); setOffset({ x: 0, y: 0 }) }} /></label>
+      <div className="modal-footer photo-crop-actions"><button type="button" className="primary-button" onClick={saveCrop} disabled={!source}>Gunakan Foto</button><button type="button" className="outline-button" onClick={onCancel}>Batal</button></div>
+    </div>
+  </Modal>
 }
+
