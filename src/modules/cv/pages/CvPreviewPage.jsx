@@ -230,7 +230,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           {facilitator.signatureUrl ? (
             <img src={resolveAssetUrl(facilitator.signatureUrl)} alt="TTD" className="cv-signature-img" />
           ) : (
-            <div className="cv-signature-placeholder">(TTD belum diunggah)</div>
+            <div className="cv-signature-placeholder" aria-hidden="true" />
           )}
               <p className="cv-signature-name"><strong>{formatFacilitatorName(facilitator)}</strong></p>
         </div>

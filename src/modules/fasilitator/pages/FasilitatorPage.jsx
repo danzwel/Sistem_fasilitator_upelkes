@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { getFacilitators, deleteFacilitator } from '../api/facilitatorApi'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { FacilitatorDetailModal } from '../components/FacilitatorDetailModal'
+import { FasilitatorFormPage } from './FasilitatorFormPage'
 import { Modal } from '../../../shared/components/Modal'
 import { compareRecommendedFacilitators, formatFacilitatorName } from '../../../shared/utils/facilitator'
+import { downloadXlsx } from '../../../shared/utils/csv'
 
-const completenessLabels = { photo: 'Foto', signature: 'TTD', certificate: 'Sertifikat', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
+const completenessLabels = { name: 'Nama lengkap', degree: 'Gelar', birthInfo: 'Tempat/tanggal lahir', nik: 'NIK', nip: 'NIP', rank: 'Pangkat/golongan', position: 'Jabatan', unit: 'Unit kerja', officeAddress: 'Alamat kantor', homeAddress: 'Alamat rumah', phone: 'No. HP', email: 'Email', photo: 'Foto', signature: 'TTD', competencies: 'Pelatihan dan materi yang dikuasai', relatedTraining: 'Pendidikan/pelatihan terkait materi', teachingExperience: 'Pengalaman melatih/mengajar', certificate: 'Sertifikat pelatihan', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
 
 export function FasilitatorPage({ onNavigate }) {
   const [facilitators, setFacilitators] = useState([])
@@ -16,7 +18,7 @@ export function FasilitatorPage({ onNavigate }) {
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState(null)
   const [detailId, setDetailId] = useState(null)
-  const [completenessId, setCompletenessId] = useState(null)
+  const [addModalOpen, setAddModalOpen] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -70,13 +72,28 @@ export function FasilitatorPage({ onNavigate }) {
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize)
   function exportFacilitators() {
-    const header = ['Nama', 'NIP', 'Jabatan', 'Unit Kerja', 'No HP', 'Email', 'Kelengkapan']
-    const rows = filtered.map((f) => [formatFacilitatorName(f), f.nip || '', f.position || '', f.unit || '', f.phone || '', f.email || '', f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'])
-    const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
-    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'data-fasilitator.csv'; link.click(); URL.revokeObjectURL(url)
+    const header = ['No', 'Nama Fasilitator', 'NIK', 'NIP', 'Jabatan', 'Unit Kerja', 'No. HP', 'Email', 'Alamat Kantor', 'Alamat Rumah', 'Rating', 'Jumlah Ulasan', 'Status Kelengkapan', 'Data Belum Lengkap']
+    const rows = filtered.map((f, index) => [
+      index + 1,
+      formatFacilitatorName(f),
+      f.nik || '',
+      f.nip || '',
+      f.position || '',
+      f.unit || '',
+      f.phone || '',
+      f.email || '',
+      f.officeAddress || '',
+      f.homeAddress || '',
+      f.rating?.average ?? f.averageRating ?? '',
+      f.rating?.count ?? f.reviewCount ?? 0,
+      f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap',
+      getMissingItems(f).join('; '),
+    ])
+    downloadXlsx('data-fasilitator.xlsx', 'Data Fasilitator', header, rows, [6, 30, 18, 18, 24, 24, 18, 32, 28, 28, 12, 16, 20, 72])
   }
-  const completenessPerson = completenessId ? facilitators.find((f) => f.id === completenessId) : null
-  const missingItems = completenessPerson ? Object.entries(completenessPerson.completeness?.checks || {}).filter(([, value]) => !value).map(([key]) => completenessLabels[key] || key) : []
+  function getMissingItems(person) {
+    return Object.entries(person.completeness?.checks || {}).filter(([, value]) => !value).map(([key]) => completenessLabels[key] || key)
+  }
 
   return (
     <section className="page-enter">
@@ -89,7 +106,7 @@ export function FasilitatorPage({ onNavigate }) {
           <button className="outline-button" onClick={() => onNavigate?.('fasilitator-import')}>
             Import Excel
           </button>
-          <button className="primary-button" onClick={() => onNavigate?.('fasilitator-tambah')}>
+          <button className="primary-button" onClick={() => setAddModalOpen(true)}>
             + Tambah Fasilitator
           </button>
         </div>
@@ -99,7 +116,7 @@ export function FasilitatorPage({ onNavigate }) {
         <div className="fasilitator-table-heading">
           <div><p className="eyebrow">DATA FASILITATOR</p><h3>Daftar Fasilitator</h3></div>
           <div className="fasilitator-table-tools">
-          <button className="outline-button export-csv-button" onClick={exportFacilitators} disabled={!filtered.length}><span>⇩</span> Export CSV</button>
+          <button className="outline-button export-csv-button" onClick={exportFacilitators} disabled={!filtered.length}><span>⇩</span> Export Excel</button>
           <div className="search fasilitator-search">
             <span>⌕</span>
             <input
@@ -134,6 +151,7 @@ export function FasilitatorPage({ onNavigate }) {
           </div>
         ) : (
           <>
+          <div className="data-table-scroll" role="region" aria-label="Tabel data fasilitator" tabIndex={0}>
           <table className="data-table">
             <thead>
               <tr>
@@ -181,9 +199,15 @@ export function FasilitatorPage({ onNavigate }) {
                     <div className="table-secondary">{f.email || '-'}</div>
                   </td>
                   <td>
-                    <button type="button" className={`status-badge ${f.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'} completeness-button`} onClick={() => !f.completeness?.isComplete && setCompletenessId(f.id)} title={f.completeness?.isComplete ? 'Data sudah lengkap' : 'Klik untuk melihat data yang belum dilengkapi'}>
-                      {f.completeness?.isComplete ? 'Lengkap' : 'Belum Lengkap'}
-                    </button>
+                    {f.completeness?.isComplete ? <span className="status-badge lengkap">Lengkap</span> : (
+                      <span className="incomplete-status-tooltip">
+                        <span className="status-badge belum_lengkap">Belum Lengkap</span>
+                        <span className="incomplete-status-popover" role="tooltip">
+                          <strong>Belum lengkap:</strong>
+                          <span>{getMissingItems(f).map((item) => <span key={item}>• {item}</span>)}</span>
+                        </span>
+                      </span>
+                    )}
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -207,18 +231,19 @@ export function FasilitatorPage({ onNavigate }) {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="pagination"><button className="pagination-button" aria-label="Halaman sebelumnya" title="Halaman sebelumnya" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>‹</button><span>Halaman {page} / {pageCount}</span><button className="pagination-button" aria-label="Halaman berikutnya" title="Halaman berikutnya" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>›</button></div>
           </>
         )}
       </div>
 
       <FacilitatorDetailModal facilitatorId={detailId} onClose={() => setDetailId(null)} onNavigate={onNavigate} />
-      <Modal open={Boolean(completenessPerson)} onClose={() => setCompletenessId(null)} title="Kelengkapan Data Fasilitator">
-        {completenessPerson && <div className="completeness-detail">
-          <h3>{completenessPerson.name}</h3>
-          {missingItems.length > 0 ? <><p>Data berikut belum dilengkapi:</p><ul>{missingItems.map((item) => <li key={item}>{item}</li>)}</ul></> : <p>Semua data sudah lengkap.</p>}
-          <button className="outline-button" onClick={() => setCompletenessId(null)}>Tutup</button>
-        </div>}
+      <Modal open={addModalOpen} onClose={() => setAddModalOpen(false)} title="Tambah Fasilitator">
+        <FasilitatorFormPage
+          embedded
+          onNavigate={() => setAddModalOpen(false)}
+          onSaved={() => { setAddModalOpen(false); loadData() }}
+        />
       </Modal>
     </section>
   )

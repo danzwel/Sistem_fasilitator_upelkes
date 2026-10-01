@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { getFacilitators, createFacilitator } from '../../fasilitator/api/facilitatorApi'
 import { uploadFacilitatorPhoto, uploadFacilitatorSignature, uploadFacilitatorSupporting, uploadFacilitatorCertificate } from '../../fasilitator/api/facilitatorUploadApi'
 import { createEducation } from '../../fasilitator/api/educationApi'
-import { createTraining, createTrainingReview, getTrainingCatalog } from '../../training/api/trainingApi'
+import { createTraining, updateTraining, getTrainingCatalog } from '../../training/api/trainingApi'
 import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { Modal } from '../../../shared/components/Modal'
@@ -30,6 +30,19 @@ function isActivityInMonth(activity, year, month) {
   return end >= monthStart && start < monthEndExclusive
 }
 
+const CALENDAR_COLOR_MAP = {
+  '#00dbb7': '#5f9f92', '#520085': '#80639a', '#70cb57': '#78a566',
+  '#75fffd': '#5faaa8', '#7acb57': '#78a566', '#9f58cc': '#8f73ac',
+  '#cbb257': '#b49658', '#e7b80d': '#c79a4d', '#fe3434': '#bc7067',
+  '#fee258': '#c79a4d', '#ff0000': '#bc7067', '#fffa66': '#c79a4d',
+  '#ffffff': '#9a958c',
+}
+
+function getCalendarAgendaColor(activity) {
+  const color = String(activity?.color || '').toLowerCase()
+  return CALENDAR_COLOR_MAP[color] || color || '#8f73ac'
+}
+
 // Map keys to SVG icons for stats
 const statIcons = {
   facilitators: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
@@ -37,6 +50,7 @@ const statIcons = {
   incomplete: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
   activities: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
   newSubmissions: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+  pendingRatings: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5v4.25l2.5 1.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
   thisMonth: <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
 }
 
@@ -59,9 +73,15 @@ export function DashboardPage({ data, onNavigate }) {
   const [agendaSaving, setAgendaSaving] = useState(false)
   const [agendaError, setAgendaError] = useState('')
   const [selectedAgenda, setSelectedAgenda] = useState(null)
+  const [selectedAgendaDate, setSelectedAgendaDate] = useState(null)
+  const [hoveredCalendarDate, setHoveredCalendarDate] = useState(null)
   const [allAgendaOpen, setAllAgendaOpen] = useState(false)
   const [selectedStat, setSelectedStat] = useState(null)
-  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' })
+  const [agendaForm, setAgendaForm] = useState({ date: '', endDate: '', name: '', material: '', organizer: '', participantCount: '', rating: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' })
+  const [ratingTarget, setRatingTarget] = useState(null)
+  const [ratingValue, setRatingValue] = useState('')
+  const [ratingError, setRatingError] = useState('')
+  const [ratingSaving, setRatingSaving] = useState(false)
 
   const agendaTrainingOptions = [...new Set([
     ...trainingCatalog.map((item) => item.name?.trim()),
@@ -80,12 +100,40 @@ export function DashboardPage({ data, onNavigate }) {
   }, [])
   function openAgenda(day) {
     const date = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
+    setAgendaForm({ date, endDate: date, name: '', material: '', organizer: '', participantCount: '', rating: '', facilitatorId: '', facilitatorName: '', color: '#9f58cc' }); setAgendaError(''); setAgendaOpen(true)
   }
   async function saveAgenda(event) {
     event.preventDefault(); if (!agendaForm.name.trim() || !agendaForm.material.trim() || !agendaForm.facilitatorName.trim()) return setAgendaError('Pelatihan, materi, dan fasilitator wajib diisi.')
     setAgendaSaving(true); setAgendaError('')
-    try { let facilitatorId = agendaForm.facilitatorId; if (!facilitatorId) facilitatorId = (await createFacilitator({ name: agendaForm.facilitatorName.trim() })).id; await createTraining(facilitatorId, { name: agendaForm.name.trim(), material: agendaForm.material.trim(), organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience', catalogOnly: false }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
+    try { let facilitatorId = agendaForm.facilitatorId; if (!facilitatorId) facilitatorId = (await createFacilitator({ name: agendaForm.facilitatorName.trim() })).id; await createTraining(facilitatorId, { name: agendaForm.name.trim(), material: agendaForm.material.trim(), organizer: agendaForm.organizer, participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount), rating: agendaForm.rating === '' ? null : Number(agendaForm.rating), date: agendaForm.date, startDate: agendaForm.date, endDate: agendaForm.endDate, color: agendaForm.color, category: 'teaching_experience', catalogOnly: false }); setAgendaOpen(false); window.location.reload() } catch (error) { setAgendaError(error.message) } finally { setAgendaSaving(false) }
+  }
+  async function saveAgendaRating(event) {
+    event.preventDefault()
+    if (!ratingTarget || !ratingValue) return setRatingError('Pilih rating terlebih dahulu.')
+    setRatingSaving(true)
+    setRatingError('')
+    try {
+      await updateTraining(ratingTarget.facilitatorId, ratingTarget.id, {
+        name: ratingTarget.name,
+        material: ratingTarget.material || '',
+        date: ratingTarget.startDate,
+        startDate: ratingTarget.startDate,
+        endDate: ratingTarget.endDate,
+        organizer: ratingTarget.organizer || '',
+        category: ratingTarget.category || 'teaching_experience',
+        role: ratingTarget.role || '',
+        participantCount: ratingTarget.participantCount ?? null,
+        color: ratingTarget.color,
+        catalogOnly: false,
+        rating: Number(ratingValue),
+      })
+      setRatingTarget(null)
+      window.location.reload()
+    } catch (error) {
+      setRatingError(error.message)
+    } finally {
+      setRatingSaving(false)
+    }
   }
   const handlePrevMonth = () => {
     if (calMonth === 0) {
@@ -231,13 +279,34 @@ export function DashboardPage({ data, onNavigate }) {
                 return start && end && cellDate >= start && cellDate <= end
               }) : []
               return (
-                <button type="button" onClick={() => item.current && openAgenda(item.day)}
-                  className={`${isToday ? 'today' : ''} ${!item.current ? 'outside' : ''}`}
+                <div
+                  className={`calendar-day-cell ${cellActivities.length ? 'has-agenda' : ''} ${Math.floor(i / 7) >= 2 ? 'menu-up' : ''}`}
                   key={i}
+                  onMouseEnter={() => cellActivities.length && setHoveredCalendarDate(cellDate)}
+                  onMouseLeave={() => setHoveredCalendarDate(null)}
                 >
-                  {item.day}
-                  {cellActivities.length > 0 && <span className="calendar-event-bars">{cellActivities.map((activity) => <i key={activity.id} style={{ background: activity.color || '#9f58cc' }} title={activity.name} />)}</span>}
-                </button>
+                  <button type="button" onClick={() => item.current && !cellActivities.length && openAgenda(item.day)}
+                    className={`${isToday ? 'today' : ''} ${!item.current ? 'outside' : ''}`}
+                    aria-label={cellActivities.length ? `${item.day}, ada agenda` : `${item.day}, tambah agenda`}
+                  >
+                    {item.day}
+                    {cellActivities.length > 0 && <span className="calendar-event-bars">{cellActivities.map((activity) => <i key={activity.id} style={{ background: getCalendarAgendaColor(activity) }} title={activity.name} />)}</span>}
+                  </button>
+                  {hoveredCalendarDate === cellDate && cellActivities.length > 0 && (
+                    <div className="calendar-day-menu">
+                      <div className="calendar-day-menu-heading">
+                        <span className="calendar-day-menu-dot" style={{ background: getCalendarAgendaColor(cellActivities[0]) }} />
+                        <span>{cellActivities.length} agenda pada tanggal ini</span>
+                      </div>
+                      <button type="button" onClick={() => { setSelectedAgendaDate(cellActivities); setHoveredCalendarDate(null) }}>
+                        <span className="calendar-menu-icon">↗</span><span><b>Rincian agenda</b><small>Lihat detail kegiatan</small></span>
+                      </button>
+                      <button type="button" onClick={() => { openAgenda(item.day); setHoveredCalendarDate(null) }}>
+                        <span className="calendar-menu-icon">＋</span><span><b>Tambah agenda</b><small>Buat kegiatan baru</small></span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
@@ -251,10 +320,27 @@ export function DashboardPage({ data, onNavigate }) {
       </div>
 
       <AllAgendaModal activities={data.allActivities || []} open={allAgendaOpen} onClose={() => setAllAgendaOpen(false)} />
-      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} onNavigate={onNavigate} />
+      <StatDetailModal stat={selectedStat} data={data} facilitators={facilitators} onClose={() => setSelectedStat(null)} onNavigate={onNavigate} onRate={(activity) => { setSelectedStat(null); setRatingTarget(activity); setRatingValue(''); setRatingError('') }} />
+
+      <Modal open={Boolean(selectedAgendaDate)} onClose={() => setSelectedAgendaDate(null)} title="Rincian Agenda Pelatihan">
+        <div className="calendar-agenda-details">
+          {(selectedAgendaDate || []).map((activity) => (
+            <article className="calendar-agenda-detail" key={activity.id}>
+              <div className="agenda-detail-color" style={{ background: getCalendarAgendaColor(activity) }} />
+              <h3>{activity.name}</h3>
+              <div className="agenda-detail-grid">
+                <span>Fasilitator</span><b>{activity.facilitator || '-'}</b>
+                <span>Tanggal</span><b>{formatAgendaDate(activity.startDate || activity.date, activity.endDate).day} {formatAgendaDate(activity.startDate || activity.date, activity.endDate).month}</b>
+                <span>Materi</span><b>{activity.material || '-'}</b>
+                <span>Penyelenggara</span><b>{activity.organizer || '-'}</b>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Modal>
 
       <Modal open={agendaOpen} onClose={() => setAgendaOpen(false)} title="Tambah Agenda Pelatihan">
-        <form onSubmit={saveAgenda}>
+        <form className="agenda-modal-form" onSubmit={saveAgenda}>
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
             <SearchableInput id="dashboard-agenda-training" label={<>Pelatihan <span className="required-mark">*</span></>} value={agendaForm.name} options={agendaTrainingOptions} placeholder="Pilih atau ketik nama pelatihan..." required onChange={(value) => setAgendaForm((form) => ({ ...form, name: value, material: '', facilitatorName: '', facilitatorId: '' }))} />
@@ -263,16 +349,26 @@ export function DashboardPage({ data, onNavigate }) {
             <label className="form-field"><span>Penyelenggara</span><input type="text" value={agendaForm.organizer} onChange={(e) => setAgendaForm((form) => ({ ...form, organizer: e.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Mulai <span className="required-mark">*</span></span><input type="date" value={agendaForm.date} required onChange={(e) => setAgendaForm((form) => ({ ...form, date: e.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={agendaForm.endDate} required onChange={(e) => setAgendaForm((form) => ({ ...form, endDate: e.target.value }))} /></label>
-            <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={agendaForm.participantCount} onChange={(e) => setAgendaForm((form) => ({ ...form, participantCount: e.target.value }))} /></label>
-            <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
+    <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={agendaForm.participantCount} onChange={(e) => setAgendaForm((form) => ({ ...form, participantCount: e.target.value }))} /></label>
+            {agendaForm.endDate && agendaForm.endDate < new Date().toISOString().slice(0, 10) && <label className="form-field"><span>Rating Fasilitator <span className="required-mark">*</span></span><select value={agendaForm.rating} required onChange={(e) => setAgendaForm((form) => ({ ...form, rating: e.target.value }))}><option value="">Pilih rating</option>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label>}
+            <label className="form-field agenda-color-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(e) => setAgendaForm((form) => ({ ...form, color: e.target.value }))} /></label>
           </div>
           <div className="agenda-form-actions"><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button className="outline-button" type="button" onClick={() => setAgendaOpen(false)}>Batal</button></div>
         </form>
       </Modal>
 
+      <Modal open={Boolean(ratingTarget)} onClose={() => !ratingSaving && setRatingTarget(null)} title="Beri Rating Agenda">
+        {ratingTarget && <form onSubmit={saveAgendaRating}>
+          <div className="rating-hero"><div className="rating-hero-icon">★</div><div><strong>{ratingTarget.name}</strong><span>{ratingTarget.facilitator}</span></div></div>
+          {ratingError && <div className="form-error">{ratingError}</div>}
+          <label className="form-field"><span>Rating Fasilitator <span className="required-mark">*</span></span><select value={ratingValue} required onChange={(event) => setRatingValue(event.target.value)}><option value="">Pilih rating</option>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label>
+          <div className="modal-footer"><button className="primary-button" disabled={ratingSaving}>{ratingSaving ? 'Menyimpan...' : 'Simpan Rating'}</button><button type="button" className="outline-button" onClick={() => setRatingTarget(null)} disabled={ratingSaving}>Batal</button></div>
+        </form>}
+      </Modal>
+
       <Modal open={Boolean(selectedAgenda)} onClose={() => setSelectedAgenda(null)} title="Detail Agenda">
         {selectedAgenda && <div className="agenda-detail">
-          <div className="agenda-detail-color" style={{ background: selectedAgenda.color || '#9f58cc' }} />
+          <div className="agenda-detail-color" style={{ background: getCalendarAgendaColor(selectedAgenda) }} />
           <h3>{selectedAgenda.name}</h3>
           <div className="agenda-detail-grid">
             <span>Fasilitator</span><b>{selectedAgenda.facilitator || '-'}</b>
@@ -326,10 +422,6 @@ export function DashboardPage({ data, onNavigate }) {
 function AllAgendaModal({ activities, open, onClose }) {
   const [items, setItems] = useState(activities)
   const [filter, setFilter] = useState('all')
-  const [ratingActivity, setRatingActivity] = useState(null)
-  const [rating, setRating] = useState('5')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
   const today = new Date().toISOString().slice(0, 10)
   useEffect(() => { setItems(activities) }, [activities])
   useEffect(() => {
@@ -342,27 +434,18 @@ function AllAgendaModal({ activities, open, onClose }) {
     return ['ongoing', 'Sedang Berlangsung']
   }
   const visible = items.filter((activity) => filter === 'all' || getStatus(activity)[0] === filter)
-  async function saveRating(event) {
-    event.preventDefault(); setSaving(true); setError('')
-    try {
-      await createTrainingReview(ratingActivity.facilitatorId, ratingActivity.id, { rating: Number(rating) })
-      setItems((current) => current.map((activity) => activity.id === ratingActivity.id && activity.facilitatorId === ratingActivity.facilitatorId ? { ...activity, reviewCount: 1 } : activity))
-      setRatingActivity(null)
-    } catch (saveError) { setError(saveError.message) } finally { setSaving(false) }
-  }
-  return <Modal open={open} onClose={() => !saving && onClose()} title="Semua Agenda Kegiatan">
+  return <Modal open={open} onClose={onClose} title="Semua Agenda Kegiatan">
     <div className="all-agenda-modal">
       <div className="all-agenda-summary"><span>Seluruh kegiatan fasilitator</span><strong>{visible.length} kegiatan</strong></div>
       <div className="filter-tabs all-agenda-filters">{[['all', 'Semua'], ['finished', 'Selesai'], ['ongoing', 'Berlangsung'], ['upcoming', 'Akan Datang']].map(([key, label]) => <button type="button" key={key} className={filter === key ? 'selected' : ''} onClick={() => setFilter(key)}>{label}</button>)}</div>
-      {visible.length === 0 ? <div className="empty-state"><p>Belum ada agenda pada status ini.</p></div> : <div className="all-agenda-list">{visible.map((activity) => { const [statusKey, statusLabel] = getStatus(activity); const facilitator = { name: activity.facilitator, degree: activity.facilitatorDegree }; return <article className="all-agenda-item" key={`${activity.facilitatorId}-${activity.id}`}><div className="all-agenda-date">{formatAgendaDate(activity.startDate, activity.endDate).day}<small>{formatAgendaDate(activity.startDate, activity.endDate).month}</small></div><div className="all-agenda-info"><h4>{activity.name}</h4><p>{formatFacilitatorName(facilitator)}</p><small>{[activity.material, activity.organizer].filter(Boolean).join(' · ') || 'Informasi kegiatan belum lengkap'}</small></div><div className="all-agenda-actions"><span className={`status-badge ${statusKey === 'finished' ? 'lengkap' : 'belum_lengkap'}`}>{statusLabel}</span>{statusKey === 'finished' ? activity.reviewCount ? <span className="reviewed-label">★ Sudah dinilai</span> : <button type="button" className="text-button" onClick={() => { setRatingActivity(activity); setRating('5'); setError('') }}>Beri rating</button> : <small>Rating setelah selesai</small>}</div></article> })}</div>}
+      {visible.length === 0 ? <div className="empty-state"><p>Belum ada agenda pada status ini.</p></div> : <div className="all-agenda-list">{visible.map((activity) => { const [statusKey, statusLabel] = getStatus(activity); const facilitator = { name: activity.facilitator, degree: activity.facilitatorDegree }; return <article className="all-agenda-item" key={`${activity.facilitatorId}-${activity.id}`}><div className="all-agenda-date">{formatAgendaDate(activity.startDate, activity.endDate).day}<small>{formatAgendaDate(activity.startDate, activity.endDate).month}</small></div><div className="all-agenda-info"><h4>{activity.name}</h4><p>{formatFacilitatorName(facilitator)}</p><small>{[activity.material, activity.organizer].filter(Boolean).join(' · ') || 'Informasi kegiatan belum lengkap'}</small></div><div className="all-agenda-actions"><span className={`status-badge ${statusKey === 'finished' ? 'lengkap' : 'belum_lengkap'}`}>{statusLabel}</span></div></article> })}</div>}
     </div>
-    <Modal open={Boolean(ratingActivity)} onClose={() => !saving && setRatingActivity(null)} title="Beri Rating Fasilitator">{ratingActivity && <form onSubmit={saveRating}><div className="rating-hero"><div className="rating-hero-icon">★</div><div><strong>Bagaimana pengalaman Anda?</strong><span>Berikan penilaian untuk membantu meningkatkan kualitas fasilitator.</span></div></div>{error && <div className="form-error">{error}</div>}<p className="muted">Rating untuk <strong>{formatFacilitatorName({ name: ratingActivity.facilitator, degree: ratingActivity.facilitatorDegree })}</strong>.</p><label className="form-field"><span>Rating</span><select value={rating} onChange={(event) => setRating(event.target.value)}>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label><div className="modal-footer"><button className="primary-button" disabled={saving}>{saving ? 'Menyimpan...' : 'Simpan Rating'}</button><button type="button" className="outline-button" onClick={() => setRatingActivity(null)} disabled={saving}>Batal</button></div></form>}</Modal>
   </Modal>
 }
 
-const completenessLabels = { photo: 'Foto', signature: 'TTD', certificate: 'Sertifikat', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
+const completenessLabels = { name: 'Nama lengkap', degree: 'Gelar', birthInfo: 'Tempat/tanggal lahir', nik: 'NIK', nip: 'NIP', rank: 'Pangkat/golongan', position: 'Jabatan', unit: 'Unit kerja', officeAddress: 'Alamat kantor', homeAddress: 'Alamat rumah', phone: 'No. HP', email: 'Email', photo: 'Foto', signature: 'TTD', competencies: 'Pelatihan dan materi yang dikuasai', relatedTraining: 'Pendidikan/pelatihan terkait materi', teachingExperience: 'Pengalaman melatih/mengajar', certificate: 'Sertifikat pelatihan', material: 'Materi pelatihan', education: 'Riwayat pendidikan', supporting: 'Dokumen pendukung' }
 
-function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
+function StatDetailModal({ stat, data, facilitators, onClose, onNavigate, onRate }) {
   const [detailPerson, setDetailPerson] = useState(null)
   const [activityDetail, setActivityDetail] = useState(null)
   const [quickAdd, setQuickAdd] = useState(null)
@@ -395,31 +478,34 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
     title = complete ? 'Fasilitator dengan Data Lengkap' : 'Fasilitator dengan Data Belum Lengkap'
     description = complete ? 'Profil telah memenuhi seluruh kelengkapan data.' : 'Profil yang masih membutuhkan pembaruan data.'
     items = people.filter((person) => Boolean(person.completeness?.isComplete) === complete)
-  } else if (stat.key === 'activities' || stat.key === 'thisMonth') {
+  } else if (stat.key === 'activities' || stat.key === 'thisMonth' || stat.key === 'pendingRatings') {
     const thisMonth = stat.key === 'thisMonth'
-    title = thisMonth ? 'Kegiatan Bulan Ini' : 'Seluruh Pelatihan / Kegiatan'
-    description = thisMonth ? `Kegiatan pada ${monthNames[today.getMonth()]} ${today.getFullYear()}.` : 'Seluruh riwayat kegiatan yang tersimpan.'
-    items = thisMonth ? activities.filter((item) => (item.startDate || '') < monthEnd && (item.endDate || item.startDate || '') >= monthStart) : activities
+    const pendingRatings = stat.key === 'pendingRatings'
+    title = pendingRatings ? 'Agenda Belum Dirating' : thisMonth ? 'Kegiatan Bulan Ini' : 'Seluruh Pelatihan / Kegiatan'
+    description = pendingRatings ? 'Agenda yang sudah selesai tetapi belum diberi rating.' : thisMonth ? `Kegiatan pada ${monthNames[today.getMonth()]} ${today.getFullYear()}.` : 'Seluruh riwayat kegiatan yang tersimpan.'
+    items = pendingRatings ? activities.filter((item) => (item.endDate || item.startDate) < today.toISOString().slice(0, 10) && !item.rating && !item.reviewCount) : thisMonth ? activities.filter((item) => (item.startDate || '') < monthEnd && (item.endDate || item.startDate || '') >= monthStart) : activities
   } else if (stat.key === 'newSubmissions') {
     title = 'Pengajuan Baru'
     description = `Fasilitator yang ditambahkan sejak ${monthNames[today.getMonth()]} ${today.getFullYear()}.`
     items = people.filter((person) => (person.createdAt || person.created_at || '') >= monthStart)
   }
+  const totalFields = detailPerson ? Object.keys(detailPerson.completeness?.checks || {}).length : 0
   const missingFields = detailPerson ? Object.entries(detailPerson.completeness?.checks || {}).filter(([, complete]) => !complete).map(([key]) => completenessLabels[key] || key) : []
-  const completedFields = Math.max(0, 6 - missingFields.length)
+  const completedFields = Math.max(0, totalFields - missingFields.length)
   return <>
     <Modal open onClose={onClose} title={title}>
       <div className="stat-detail-modal">
         <div className="stat-detail-summary"><span>{description}</span><strong>{stat.value} data</strong></div>
         {items.length === 0 ? <EmptyState text="Belum ada data untuk ditampilkan." /> : <div className="stat-detail-list">
           {items.map((item, index) => {
-            const isActivity = stat.key === 'activities' || stat.key === 'thisMonth'
+            const isActivity = stat.key === 'activities' || stat.key === 'thisMonth' || stat.key === 'pendingRatings'
             const person = !isActivity && item
-            return <article className="stat-detail-item" key={`${item.id || item.name}-${index}`}>
+            return <article className={`stat-detail-item ${stat.key === 'pendingRatings' ? 'pending-rating-detail-item' : ''}`} key={`${item.id || item.name}-${index}`}>
               <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
               <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4>{isActivity && <p>{`${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}`}</p>}</div>
               {isActivity ? <div className="stat-detail-actions">
                 <button type="button" className="text-button" onClick={() => setActivityDetail(item)}>Detail</button>
+                {stat.key === 'pendingRatings' && <button type="button" className="primary-button stat-detail-rate-button" onClick={() => onRate?.(item)}>Beri Rating</button>}
               </div> : <div className="stat-detail-actions">
                 <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>
                 {!person.completeness?.isComplete && <div className="stat-detail-buttons">
@@ -439,11 +525,11 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate }) {
           <div><span className="completeness-kicker">PROFIL FASILITATOR</span><h3>{formatFacilitatorName(detailPerson)}</h3><p>Lengkapi data berikut agar profil fasilitator siap digunakan.</p></div>
         </div>
         <div className="completeness-progress">
-          <div><span>Kelengkapan profil</span><strong>{completedFields}/6 terisi</strong></div>
-          <div className="completeness-progress-track"><span style={{ width: `${(completedFields / 6) * 100}%` }} /></div>
+          <div><span>Kelengkapan profil</span><strong>{completedFields}/{totalFields} terisi</strong></div>
+          <div className="completeness-progress-track"><span style={{ width: `${totalFields ? (completedFields / totalFields) * 100 : 0}%` }} /></div>
         </div>
         <div className="missing-fields-heading"><span className="missing-fields-icon">!</span><div><strong>{missingFields.length} data perlu dilengkapi</strong><small>Periksa kembali bagian berikut</small></div></div>
-                <div className="missing-fields-list">{missingFields.map((item) => <div className="missing-field-card" key={item}><span className="missing-field-check">!</span><span className="missing-field-copy"><strong>{item}</strong><small>Belum tersedia</small></span><button type="button" className="missing-field-add" onClick={() => setQuickAdd({ key: Object.entries(detailPerson.completeness?.checks || {}).find(([key]) => (completenessLabels[key] || key) === item)?.[0], label: item })}>Tambah</button></div>)}</div>
+          <div className="missing-fields-list">{missingFields.map((item) => <div className="missing-field-card" key={item}><span className="missing-field-check">!</span><span className="missing-field-copy"><strong>{item}</strong><small>Belum tersedia</small></span><button type="button" className="missing-field-add" onClick={() => { const key = Object.entries(detailPerson.completeness?.checks || {}).find(([fieldKey]) => (completenessLabels[fieldKey] || fieldKey) === item)?.[0]; if (['degree', 'birthInfo', 'nik', 'nip', 'rank', 'position', 'unit', 'officeAddress', 'homeAddress', 'phone', 'email', 'competencies', 'relatedTraining', 'teachingExperience'].includes(key)) { setDetailPerson(null); onClose(); onNavigate?.('fasilitator-edit', detailPerson.id, 'dashboard') } else setQuickAdd({ key, label: item }) }}>Tambah</button></div>)}</div>
         <div className="modal-footer">
           <button type="button" className="primary-button" onClick={() => { setDetailPerson(null); onClose(); onNavigate?.('fasilitator-edit', detailPerson.id, 'dashboard') }}>Edit Data</button>
           <button type="button" className="outline-button" onClick={() => setDetailPerson(null)}>Tutup</button>

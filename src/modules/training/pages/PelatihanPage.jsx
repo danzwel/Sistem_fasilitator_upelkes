@@ -5,6 +5,7 @@ import { Modal } from '../../../shared/components/Modal'
 import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { completenessScore, formatFacilitatorName } from '../../../shared/utils/facilitator'
+import { downloadXlsx, formatExportDate } from '../../../shared/utils/csv'
 
 const CATEGORY_LABEL = {
   related_training: 'Terkait Materi',
@@ -13,7 +14,7 @@ const CATEGORY_LABEL = {
 
 const EMPTY_ASSIGNMENT = () => ({ name: '', facilitatorIds: [] })
 const EMPTY_FORM = { name: '', materialAssignments: [EMPTY_ASSIGNMENT()], category: 'teaching_experience', organizer: '', date: '', startDate: '', endDate: '', participantCount: '', color: '#9f58cc' }
-const EMPTY_AGENDA_FORM = { facilitatorId: '', facilitatorName: '', name: '', material: '', organizer: '', startDate: '', endDate: '', participantCount: '', color: '#9f58cc' }
+const EMPTY_AGENDA_FORM = { facilitatorId: '', facilitatorName: '', name: '', material: '', organizer: '', startDate: '', endDate: '', participantCount: '', rating: '', color: '#9f58cc' }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
 
@@ -88,6 +89,8 @@ export function PelatihanPage({ onNavigate }) {
   const [detailKey, setDetailKey] = useState(null)
   const [groupDetailName, setGroupDetailName] = useState(null)
   const [selectedMaterialName, setSelectedMaterialName] = useState(null)
+  const [materialQuery, setMaterialQuery] = useState('')
+  const [facilitatorQuery, setFacilitatorQuery] = useState('')
   const [editKey, setEditKey] = useState(null)
   const [editForm, setEditForm] = useState(EMPTY_FORM)
   const [editError, setEditError] = useState(null)
@@ -161,10 +164,27 @@ export function PelatihanPage({ onNavigate }) {
   }, [rows, query, categoryFilter])
 
   function exportTrainings() {
-    const header = ['Nama Kegiatan', 'Fasilitator', 'Materi', 'Tanggal Mulai', 'Tanggal Selesai', 'Penyelenggara', 'Kategori']
-    const data = filtered.map((row) => [row.name, row.facilitatorName, row.material || '', row.startDate || row.date || '', row.endDate || row.date || '', row.organizer || '', CATEGORY_LABEL[row.category] || row.category || ''])
-    const csv = [header, ...data].map((record) => record.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
-    const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })); const link = document.createElement('a'); link.href = url; link.download = 'data-pelatihan.csv'; link.click(); URL.revokeObjectURL(url)
+    const header = ['No', 'Nama Pelatihan / Kegiatan', 'Materi / Mata Pelatihan', 'Fasilitator', 'Jabatan', 'Unit Kerja', 'Tanggal Mulai', 'Tanggal Selesai', 'Penyelenggara', 'Jumlah Peserta', 'Kategori', 'Rating Fasilitator', 'Status Kegiatan']
+    const data = filtered.map((row, index) => {
+      const endDate = row.endDate || row.date || ''
+      const isFinished = endDate && endDate < new Date().toISOString().slice(0, 10)
+      return [
+        index + 1,
+        row.name || '',
+        row.material || '',
+        row.facilitatorName || '',
+        row.facilitatorPosition || '',
+        row.facilitatorUnit || '',
+        formatExportDate(row.startDate || row.date),
+        formatExportDate(endDate),
+        row.organizer || '',
+        row.participantCount ?? '',
+        CATEGORY_LABEL[row.category] || row.category || '',
+        row.facilitatorRating ?? '',
+        isFinished ? 'Selesai' : 'Akan Datang / Berlangsung',
+      ]
+    })
+    downloadXlsx('data-pelatihan.xlsx', 'Data Pelatihan', header, data, [6, 46, 34, 30, 24, 26, 16, 16, 24, 16, 24, 18, 26])
   }
 
   const trainingCards = useMemo(() => {
@@ -213,6 +233,8 @@ export function PelatihanPage({ onNavigate }) {
 
   const selectedGroup = trainingCards.find((card) => card.name === groupDetailName)
   const selectedMaterial = selectedGroup?.materials.find((material) => material.name === selectedMaterialName)
+  const visibleMaterials = (selectedGroup?.materials || []).filter((material) => material.name.toLowerCase().includes(materialQuery.trim().toLowerCase()))
+  const visibleFacilitators = (selectedMaterial?.facilitators || []).filter((item) => [item.facilitatorName, item.facilitatorPosition, item.facilitatorUnit].filter(Boolean).join(' ').toLowerCase().includes(facilitatorQuery.trim().toLowerCase()))
 
   function openAddForm() {
     setForm(EMPTY_FORM)
@@ -245,6 +267,7 @@ export function PelatihanPage({ onNavigate }) {
         name: agendaForm.name.trim(), material: agendaForm.material.trim(), organizer: agendaForm.organizer.trim(),
         date: agendaForm.startDate, startDate: agendaForm.startDate, endDate: agendaForm.endDate,
         participantCount: agendaForm.participantCount === '' ? null : Number(agendaForm.participantCount),
+        rating: agendaForm.rating === '' ? null : Number(agendaForm.rating),
         color: agendaForm.color, category: 'teaching_experience', catalogOnly: false,
       })
       setAgendaFormOpen(false)
@@ -313,7 +336,7 @@ export function PelatihanPage({ onNavigate }) {
   function openDetail(r) {
     setDetailKey(rowKey(r))
   }
-  function openGroupDetail(name) { setGroupDetailName(name); setSelectedMaterialName(null) }
+  function openGroupDetail(name) { setGroupDetailName(name); setSelectedMaterialName(null); setMaterialQuery(''); setFacilitatorQuery('') }
 
   function openEdit(r) {
     setEditKey(rowKey(r))
@@ -406,7 +429,7 @@ export function PelatihanPage({ onNavigate }) {
       </div>
 
       <Modal open={agendaFormOpen} onClose={() => !agendaSaving && setAgendaFormOpen(false)} title="Tambah Agenda Kegiatan Pelatihan">
-        <form onSubmit={handleAgendaSubmit}>
+        <form className="agenda-modal-form" onSubmit={handleAgendaSubmit}>
           {agendaError && <div className="form-error" style={{ marginBottom: 10 }}>{agendaError}</div>}
           <div className="form-grid">
             <SearchableInput id="agenda-training" label={<>Pelatihan <span className="required-mark">*</span></>} value={agendaForm.name} options={agendaTrainingOptions} placeholder="Pilih atau ketik nama pelatihan..." required onChange={(value) => setAgendaForm((current) => ({ ...current, name: value, material: '', facilitatorName: '', facilitatorId: '' }))} />
@@ -416,7 +439,8 @@ export function PelatihanPage({ onNavigate }) {
             <label className="form-field"><span>Tanggal Mulai <span className="required-mark">*</span></span><input type="date" value={agendaForm.startDate} required onChange={(event) => setAgendaForm((current) => ({ ...current, startDate: event.target.value }))} /></label>
             <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={agendaForm.endDate} required onChange={(event) => setAgendaForm((current) => ({ ...current, endDate: event.target.value }))} /></label>
             <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={agendaForm.participantCount} onChange={(event) => setAgendaForm((current) => ({ ...current, participantCount: event.target.value }))} /></label>
-            <label className="form-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(event) => setAgendaForm((current) => ({ ...current, color: event.target.value }))} /></label>
+              {agendaForm.endDate && agendaForm.endDate < new Date().toISOString().slice(0, 10) && <label className="form-field"><span>Rating Fasilitator <span className="required-mark">*</span></span><select value={agendaForm.rating} required onChange={(event) => setAgendaForm((current) => ({ ...current, rating: event.target.value }))}><option value="">Pilih rating</option>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label>}
+            <label className="form-field agenda-color-field"><span>Warna Agenda</span><input type="color" value={agendaForm.color} onChange={(event) => setAgendaForm((current) => ({ ...current, color: event.target.value }))} /></label>
           </div>
           <div className="form-actions-row"><button className="primary-button" type="submit" disabled={agendaSaving}>{agendaSaving ? 'Menyimpan...' : 'Simpan Agenda'}</button><button type="button" className="outline-button" onClick={() => setAgendaFormOpen(false)} disabled={agendaSaving}>Batal</button></div>
         </form>
@@ -465,7 +489,7 @@ export function PelatihanPage({ onNavigate }) {
         <div className="training-table-heading">
           <div><p className="eyebrow">KATALOG KEGIATAN</p><h3>Daftar Kegiatan Pelatihan</h3></div>
           <div className="training-table-tools">
-            <button className="outline-button export-csv-button" onClick={exportTrainings} disabled={!filtered.length}><span>⇩</span> Export CSV</button>
+            <button className="outline-button export-csv-button" onClick={exportTrainings} disabled={!filtered.length}><span>⇩</span> Export Excel</button>
             <div className="search training-search">
               <span>⌕</span>
               <input aria-label="Cari kegiatan, materi, atau fasilitator" placeholder="Cari kegiatan, materi, atau fasilitator..." value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -494,25 +518,35 @@ export function PelatihanPage({ onNavigate }) {
         )}
       </div>
 
-      <Modal open={Boolean(groupDetailName)} onClose={() => { setGroupDetailName(null); setSelectedMaterialName(null) }} title={selectedMaterial ? `${groupDetailName} · ${selectedMaterial.name}` : groupDetailName || 'Materi Pelatihan'}>
+      <Modal open={Boolean(groupDetailName)} onClose={() => { setGroupDetailName(null); setSelectedMaterialName(null); setMaterialQuery(''); setFacilitatorQuery('') }} title={selectedMaterial ? `${groupDetailName} · ${selectedMaterial.name}` : groupDetailName || 'Materi Pelatihan'}>
         <div className="training-group-modal">
           {!selectedMaterial ? (
             <>
               <p className="modal-intro">Pilih materi untuk melihat fasilitator yang sesuai.</p>
+              <div className="search training-modal-search">
+                <span>⌕</span>
+                <input aria-label="Cari materi" placeholder="Cari materi..." value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} />
+              </div>
               <div className="material-choice-list">
-                {selectedGroup?.materials.map((material) => <button type="button" className="material-choice" key={material.name} onClick={() => setSelectedMaterialName(material.name)}><span><b>{material.name}</b><small>{material.facilitators.length} fasilitator tersedia</small></span><strong>→</strong></button>)}
+                {visibleMaterials.map((material) => <button type="button" className="material-choice" key={material.name} onClick={() => { setSelectedMaterialName(material.name); setFacilitatorQuery('') }}><span><b>{material.name}</b><small>{material.facilitators.length} fasilitator tersedia</small></span><strong>→</strong></button>)}
+                {!visibleMaterials.length && <div className="training-modal-empty">Materi tidak ditemukan.</div>}
               </div>
             </>
           ) : (
             <>
-              <button type="button" className="text-button material-back" onClick={() => setSelectedMaterialName(null)}>← Kembali ke daftar materi</button>
+              <button type="button" className="text-button material-back" title="Kembali ke daftar materi" aria-label="Kembali ke daftar materi" onClick={() => { setSelectedMaterialName(null); setFacilitatorQuery('') }}>← Materi</button>
               <p className="modal-intro">Fasilitator yang sesuai dengan materi ini:</p>
+              <div className="search training-modal-search">
+                <span>⌕</span>
+                <input aria-label="Cari fasilitator" placeholder="Cari fasilitator..." value={facilitatorQuery} onChange={(event) => setFacilitatorQuery(event.target.value)} />
+              </div>
               <div className="training-facilitator-list">
-                {selectedMaterial.facilitators.map((item) => <div className="training-facilitator-row" key={item.facilitatorId}>
+                {visibleFacilitators.map((item) => <div className="training-facilitator-row" key={item.facilitatorId}>
                   {item.facilitatorPhotoUrl ? <img src={resolveAssetUrl(item.facilitatorPhotoUrl)} alt="" className="training-facilitator-photo" /> : <div className="training-facilitator-photo training-facilitator-photo-placeholder">{(item.facilitatorName || '?').charAt(0).toUpperCase()}</div>}
                   <div className="training-facilitator-info"><b>{item.facilitatorName}</b><span>{item.facilitatorPosition || 'Fasilitator'}{item.facilitatorUnit ? ` · ${item.facilitatorUnit}` : ''}</span></div>
                   <div className="training-facilitator-contacts">{item.facilitatorPhone && <a href={toWhatsAppLink(item.facilitatorPhone)} target="_blank" rel="noreferrer" className="detail-contact-button wa" aria-label={`WhatsApp ${item.facilitatorName}`}><img src="/contact-icons/whatsapp.jpg" alt="" className="contact-logo" /></a>}{item.facilitatorEmail && <a href={toEmailLink(item.facilitatorEmail, item.facilitatorName)} target="_blank" rel="noreferrer" className="detail-contact-button email" aria-label={`Email ${item.facilitatorName}`}><img src="/contact-icons/gmail.jpg" alt="" className="contact-logo" /></a>}</div>
                 </div>)}
+                {!visibleFacilitators.length && <div className="training-modal-empty">Fasilitator tidak ditemukan.</div>}
               </div>
             </>
           )}

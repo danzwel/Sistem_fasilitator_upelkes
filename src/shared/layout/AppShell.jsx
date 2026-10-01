@@ -35,11 +35,18 @@ export function AppShell({ activePage, onNavigate, onLogout, children, notificat
   })
   const notifications = [
     ...(notificationData?.newSubmissions > 0 ? [{ id: 'new', icon: '✦', title: 'Pengajuan baru', text: `${notificationData.newSubmissions} fasilitator ditambahkan bulan ini.`, page: 'fasilitator' }] : []),
-    ...(notificationData?.upcomingCount > 0 ? [{ id: 'agenda', icon: '◷', title: 'Agenda mendatang', text: `${notificationData.upcomingCount} kegiatan terdekat menunggu perhatian.`, page: 'pelatihan' }] : []),
-    ...(notificationData?.missing?.photo > 0 ? [{ id: 'photo', icon: '!', title: 'Data belum lengkap', text: `${notificationData.missing.photo} fasilitator belum memiliki foto.`, page: 'fasilitator' }] : []),
-    ...(notificationData?.missing?.signature > 0 ? [{ id: 'signature', icon: '!', title: 'TTD belum tersedia', text: `${notificationData.missing.signature} fasilitator belum memiliki TTD.`, page: 'fasilitator' }] : []),
+    ...(notificationData?.upcomingCount > 0 ? [{ id: 'agenda', icon: '◷', title: 'Agenda mendatang', text: `${notificationData.upcomingCount} kegiatan terdekat menunggu perhatian.`, page: 'pelatihan', agendas: notificationData.upcoming || [] }] : []),
+    ...(notificationData?.pendingRatings > 0 ? [{ id: 'pending-ratings', icon: '★', title: 'Agenda selesai perlu rating', text: `${notificationData.pendingRatings} agenda selesai belum diberi rating.`, page: 'dashboard', agendas: notificationData.pendingRatingActivities || [] }] : []),
+    ...(notificationData?.incompleteCount > 0 ? [{ id: 'incomplete', icon: '!', title: 'Data fasilitator belum lengkap', text: `${notificationData.incompleteCount} fasilitator masih memiliki data yang belum lengkap.`, page: 'fasilitator' }] : []),
   ]
   const unreadNotifications = notifications.filter((item) => !readNotificationIds.has(item.id))
+  const [expandedNotificationId, setExpandedNotificationId] = useState(null)
+  function formatNotificationDate(item) {
+    const date = item.endDate || item.startDate || item.date
+    if (!date) return ''
+    const [year, month, day] = String(date).split('-')
+    return year && month && day ? `${day}/${month}/${year}` : date
+  }
   function markNotificationRead(id) {
     setReadNotificationIds((current) => {
       const next = new Set(current)
@@ -148,8 +155,14 @@ export function AppShell({ activePage, onNavigate, onLogout, children, notificat
               <div className="notification-panel">
                 <div className="notification-heading"><b>Notifikasi {unreadNotifications.length > 0 && <small>({unreadNotifications.length} belum dibaca)</small>}</b><button onClick={() => setNotificationsOpen(false)} aria-label="Tutup">×</button></div>
                 {notifications.length === 0 ? <p className="notification-empty">Belum ada notifikasi baru.</p> : notifications.map((item) => (
-                  <button key={item.id} className={`notification-item ${readNotificationIds.has(item.id) ? 'read' : 'unread'}`} onClick={() => { markNotificationRead(item.id); setNotificationsOpen(false); onNavigate(item.page) }}>
-                    <span>{item.icon}</span><span><b>{item.title}</b><small>{item.text}</small></span>
+                  <button key={item.id} className={`notification-item ${readNotificationIds.has(item.id) ? 'read' : 'unread'} ${item.agendas ? 'has-agendas' : ''}`} onClick={() => {
+                    markNotificationRead(item.id)
+                    if (item.agendas) setExpandedNotificationId((current) => current === item.id ? null : item.id)
+                    else { setNotificationsOpen(false); onNavigate(item.page) }
+                  }}>
+                    <span>{item.icon}</span><span><b>{item.title}</b><small>{item.text}</small>
+                    {item.agendas && expandedNotificationId === item.id && <span className="notification-agenda-list">{item.agendas.map((agenda) => <span className="notification-agenda" key={agenda.id}><b>{agenda.name}</b><small>{formatNotificationDate(agenda)}{agenda.facilitator ? ` · ${agenda.facilitator}` : ''}</small></span>)}</span>}
+                    </span>
                   </button>
                 ))}
               </div>
