@@ -7,6 +7,7 @@ import { formatFacilitatorName } from '../../../shared/utils/facilitator'
 import { SearchableInput } from '../../../shared/components/SearchableInput'
 import { Modal } from '../../../shared/components/Modal'
 import { getDashboardSummary } from '../api/dashboardApi'
+import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 
 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
 
@@ -82,6 +83,7 @@ export function DashboardPage({ data, onNavigate }) {
   const [ratingValue, setRatingValue] = useState('')
   const [ratingError, setRatingError] = useState('')
   const [ratingSaving, setRatingSaving] = useState(false)
+  const ratingFacilitator = ratingTarget ? facilitators.find((facilitator) => facilitator.id === ratingTarget.facilitatorId) || { name: ratingTarget.facilitator, photoUrl: ratingTarget.facilitatorPhotoUrl, position: ratingTarget.facilitatorPosition, unit: ratingTarget.facilitatorUnit } : null
 
   const agendaTrainingOptions = [...new Set([
     ...trainingCatalog.map((item) => item.name?.trim()),
@@ -359,7 +361,21 @@ export function DashboardPage({ data, onNavigate }) {
 
       <Modal open={Boolean(ratingTarget)} onClose={() => !ratingSaving && setRatingTarget(null)} title="Beri Rating Agenda">
         {ratingTarget && <form onSubmit={saveAgendaRating}>
-          <div className="rating-hero"><div className="rating-hero-icon">★</div><div><strong>{ratingTarget.name}</strong><span>{ratingTarget.facilitator}</span></div></div>
+          <div className="rating-facilitator-card">
+            <div className="rating-facilitator-photo" aria-hidden="true">
+              {ratingFacilitator?.photoUrl ? <img src={resolveAssetUrl(ratingFacilitator.photoUrl)} alt="" /> : <span>{(ratingFacilitator?.name || '?').trim().split(/\s+/).slice(0, 2).map((name) => name[0]).join('').toUpperCase()}</span>}
+            </div>
+            <div className="rating-facilitator-copy"><span className="rating-kicker">FASILITATOR YANG DINILAI</span><h3>{formatFacilitatorName(ratingFacilitator || {})}</h3><p>{ratingFacilitator?.position || ratingFacilitator?.unit || 'Fasilitator UPELKES'}</p></div>
+          </div>
+          <div className="rating-training-card">
+            <div className="rating-training-heading"><span className="rating-training-icon">★</span><div><span className="rating-kicker">AGENDA PELATIHAN</span><h4>{ratingTarget.name}</h4></div></div>
+            <div className="rating-training-meta">
+              <div><span>Materi</span><strong>{ratingTarget.material || 'Belum diisi'}</strong></div>
+              <div><span>Tanggal</span><strong>{formatAgendaDate(ratingTarget.startDate || ratingTarget.date, ratingTarget.endDate || ratingTarget.startDate || ratingTarget.date).day} {formatAgendaDate(ratingTarget.startDate || ratingTarget.date, ratingTarget.endDate || ratingTarget.startDate || ratingTarget.date).month}</strong></div>
+              <div><span>Penyelenggara</span><strong>{ratingTarget.organizer || 'Belum diisi'}</strong></div>
+              <div><span>Peserta</span><strong>{ratingTarget.participantCount ?? 'Belum diisi'}</strong></div>
+            </div>
+          </div>
           {ratingError && <div className="form-error">{ratingError}</div>}
           <label className="form-field"><span>Rating Fasilitator <span className="required-mark">*</span></span><select value={ratingValue} required onChange={(event) => setRatingValue(event.target.value)}><option value="">Pilih rating</option>{[5, 4, 3, 2, 1].map((value) => <option value={value} key={value}>{value} bintang</option>)}</select></label>
           <div className="modal-footer"><button className="primary-button" disabled={ratingSaving}>{ratingSaving ? 'Menyimpan...' : 'Simpan Rating'}</button><button type="button" className="outline-button" onClick={() => setRatingTarget(null)} disabled={ratingSaving}>Batal</button></div>
@@ -457,7 +473,7 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate, onRate
   const basePeople = data.facilitatorSummary || facilitators || []
   const people = basePeople.map((person) => {
     const details = (facilitators || []).find((item) => item.id === person.id)
-    return details ? { ...person, completeness: details.completeness } : person
+    return details ? { ...details, ...person, completeness: details.completeness } : person
   })
   const peopleByPriority = [...people].sort((a, b) => {
     const completeDifference = Number(Boolean(b.completeness?.isComplete)) - Number(Boolean(a.completeness?.isComplete))
@@ -500,11 +516,20 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate, onRate
           {items.map((item, index) => {
             const isActivity = stat.key === 'activities' || stat.key === 'thisMonth' || stat.key === 'pendingRatings'
             const person = !isActivity && item
-            return <article className={`stat-detail-item ${stat.key === 'pendingRatings' ? 'pending-rating-detail-item' : ''}`} key={`${item.id || item.name}-${index}`}>
+            const activityFacilitator = isActivity ? (facilitators || []).find((facilitator) => facilitator.id === item.facilitatorId) || { name: item.facilitator, photoUrl: item.facilitatorPhotoUrl } : null
+            return <article className={`stat-detail-item ${isActivity ? '' : 'stat-detail-person-item'} ${stat.key === 'pendingRatings' ? 'pending-rating-detail-item' : ''}`} key={`${item.id || item.name}-${index}`}>
               <div className="stat-detail-index">{String(index + 1).padStart(2, '0')}</div>
-              <div><h4>{isActivity ? item.name : formatFacilitatorName(person)}</h4>{isActivity && <p>{`${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}`}</p>}</div>
+              {isActivity ? (stat.key === 'pendingRatings' ? <div className="pending-rating-info">
+                <div className="pending-rating-avatar" aria-hidden="true">{activityFacilitator?.photoUrl ? <img src={resolveAssetUrl(activityFacilitator.photoUrl)} alt="" /> : <span>{(activityFacilitator?.name || '?').trim().split(/\s+/).slice(0, 2).map((name) => name[0]).join('').toUpperCase()}</span>}</div>
+                <div><h4>{item.name}</h4><p>{`${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${activityFacilitator?.name || 'Fasilitator belum tercatat'}`}</p></div>
+              </div> : <div><h4>{item.name}</h4><p>{`${formatAgendaDate(item.startDate, item.endDate).day} ${formatAgendaDate(item.startDate, item.endDate).month} · ${item.facilitator || 'Fasilitator belum tercatat'}`}</p></div>) : <div className="stat-detail-person-info">
+                <div className="stat-detail-avatar" aria-hidden="true">
+                  {person.photoUrl ? <img src={resolveAssetUrl(person.photoUrl)} alt="" /> : <span>{(person.name || '?').trim().split(/\s+/).slice(0, 2).map((name) => name[0]).join('').toUpperCase()}</span>}
+                </div>
+                <div className="stat-detail-person-copy"><h4>{formatFacilitatorName(person)}</h4><p>{person.position || person.unit || 'Fasilitator UPELKES'}</p></div>
+              </div>}
               {isActivity ? <div className="stat-detail-actions">
-                <button type="button" className="text-button" onClick={() => setActivityDetail(item)}>Detail</button>
+                {stat.key !== 'pendingRatings' && <button type="button" className="text-button" onClick={() => setActivityDetail(item)}>Detail</button>}
                 {stat.key === 'pendingRatings' && <button type="button" className="primary-button stat-detail-rate-button" onClick={() => onRate?.(item)}>Beri Rating</button>}
               </div> : <div className="stat-detail-actions">
                 <span className={`status-badge ${person.completeness?.isComplete ? 'lengkap' : 'belum_lengkap'}`}>{person.completeness?.isComplete ? 'Lengkap' : 'Belum lengkap'}</span>
@@ -521,8 +546,10 @@ function StatDetailModal({ stat, data, facilitators, onClose, onNavigate, onRate
     <Modal open={Boolean(detailPerson)} onClose={() => setDetailPerson(null)} title="Detail Data Belum Lengkap">
       {detailPerson && <div className="completeness-detail completeness-detail-modal">
         <div className="completeness-hero">
-          <div className="completeness-avatar">{(detailPerson.name || '?').charAt(0).toUpperCase()}</div>
-          <div><span className="completeness-kicker">PROFIL FASILITATOR</span><h3>{formatFacilitatorName(detailPerson)}</h3><p>Lengkapi data berikut agar profil fasilitator siap digunakan.</p></div>
+          <div className="completeness-avatar completeness-photo">
+            {detailPerson.photoUrl ? <img src={resolveAssetUrl(detailPerson.photoUrl)} alt={`Foto ${formatFacilitatorName(detailPerson)}`} /> : <span>{(detailPerson.name || '?').trim().split(/\s+/).slice(0, 2).map((name) => name[0]).join('').toUpperCase()}</span>}
+          </div>
+          <div className="completeness-profile-copy"><span className="completeness-kicker">PROFIL FASILITATOR</span><h3>{formatFacilitatorName(detailPerson)}</h3><span className="completeness-role">{detailPerson.position || detailPerson.unit || 'Fasilitator UPELKES'}</span><p>Lengkapi data berikut agar profil fasilitator siap digunakan.</p></div>
         </div>
         <div className="completeness-progress">
           <div><span>Kelengkapan profil</span><strong>{completedFields}/{totalFields} terisi</strong></div>
