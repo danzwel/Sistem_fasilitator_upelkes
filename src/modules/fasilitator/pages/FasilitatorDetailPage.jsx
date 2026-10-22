@@ -79,7 +79,7 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
           <h2>Detail Fasilitator</h2>
           <p className="muted">Informasi lengkap fasilitator (read-only).</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="page-actions" role="group" aria-label="Aksi fasilitator">
           <button className="outline-button" onClick={() => onNavigate?.('fasilitator')}>← Kembali</button>
           <button className="outline-button" onClick={() => onNavigate?.('fasilitator-cv', facilitatorId)}>Lihat CV</button>
           <button className="primary-button" onClick={() => onNavigate?.('fasilitator-edit', facilitatorId, 'fasilitator-detail')}>Edit</button>

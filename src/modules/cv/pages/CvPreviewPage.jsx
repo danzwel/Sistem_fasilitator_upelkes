@@ -131,7 +131,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           <h2>Preview CV</h2>
           <p className="muted">Cek dulu tampilannya, baru export ke PDF.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div className="page-actions">
           <button className="outline-button" onClick={() => onNavigate?.(cvReturnTo || 'fasilitator-detail', facilitatorId)}>
             ← Kembali
           </button>
@@ -141,6 +141,13 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
         </div>
       </div>
 
+      <p className="cv-swipe-hint no-print" aria-hidden="true">← Geser ke kanan atau kiri untuk melihat seluruh CV →</p>
+      <div
+        className="cv-preview-scroll"
+        role="region"
+        aria-label="Pratinjau CV. Geser ke kanan atau kiri untuk melihat seluruh dokumen."
+        tabIndex={0}
+      >
       <div className="cv-page" ref={cvRef}>
         <div className="cv-photo-slot">
           {facilitator.photoUrl ? (
@@ -234,6 +241,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           )}
               <p className="cv-signature-name"><strong>{formatFacilitatorName(facilitator)}</strong></p>
         </div>
+      </div>
       </div>
     </section>
   )
