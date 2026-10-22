@@ -1,195 +1,211 @@
 # Sistem Informasi Fasilitator UPTD UPELKES Jawa Barat
 
-Aplikasi web untuk mengelola data fasilitator, pendidikan, kompetensi, pelatihan, sertifikat, evaluasi, monitoring, dan pembuatan CV fasilitator.
+Aplikasi web untuk mengelola data fasilitator UPTD UPELKES Jawa Barat: profil, pendidikan, kompetensi/materi, pelatihan, sertifikat, agenda, penilaian, monitoring kelengkapan, dan CV PDF.
+
+## Fitur
+
+- Login administrator dan pengaturan akun.
+- Dashboard ringkasan data, agenda, kelengkapan, dan penilaian.
+- Kelola fasilitator: tambah, ubah, hapus, pencarian, import Excel, foto, tanda tangan, sertifikat, dan dokumen pendukung.
+- Riwayat pendidikan, pelatihan terkait, pengalaman mengajar, serta kompetensi/materi.
+- Katalog pelatihan berdasarkan kegiatan dan materi, dengan pencarian materi maupun fasilitator.
+- Monitoring kelengkapan data dan export laporan.
+- Pratinjau dan unduh CV PDF.
+- Antarmuka responsif untuk desktop dan ponsel. Tabel, kumpulan tombol, dan CV yang lebar dapat digeser horizontal tanpa memotong data.
 
 ## Teknologi
 
-- React + Vite untuk antarmuka web.
-- Node.js HTTP API untuk backend.
-- SQLite untuk database lokal.
-- Token authentication untuk akses pengguna.
-- Upload file untuk foto, tanda tangan, sertifikat, dan dokumen pendukung.
-
-## Struktur utama
-
-```text
-src/                    Frontend React
-src/modules/auth        Login dan autentikasi
-src/modules/fasilitator Data master fasilitator dan import Excel
-src/modules/training    Data pelatihan dan katalog pelatihan
-src/modules/monitoring   Monitoring dan evaluasi
-src/modules/competency   Profil kompetensi
-src/modules/dashboard    Dashboard dan ringkasan data
-server/                 Backend API, database, migration, dan repository
-storage/                Database SQLite dan file upload
-docs/                   Dokumentasi teknis dan kontrak API
-```
+- React + Vite.
+- Node.js HTTP API.
+- SQLite.
+- Autentikasi token dan penyimpanan file lokal.
 
 ## Persyaratan
 
-- Node.js 22 atau yang lebih baru.
-- npm.
+- Node.js 22 atau lebih baru.
+- npm (tersedia bersama Node.js).
+- Git, jika memasang dari repository.
+
+Periksa versi yang terpasang:
+
+```powershell
+node --version
+npm --version
+```
 
 ## Instalasi
 
-```bash
+### 1. Ambil kode aplikasi
+
+```powershell
 git clone https://github.com/danzwel/Sistem_fasilitator_upelkes.git
 cd Sistem_fasilitator_upelkes
+```
+
+Untuk memakai branch fitur tertentu:
+
+```powershell
+git switch feat/monitoring-daniel
+```
+
+### 2. Pasang dependensi
+
+```powershell
 npm install
 ```
 
-Salin `.env.example` menjadi `.env`, kemudian sesuaikan nilainya:
+### 3. Buat konfigurasi lokal
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Atur nilai berikut di `.env` sebelum dipakai di lingkungan selain pengembangan:
 
 ```env
 VITE_API_BASE_URL=/api
+VITE_ASSET_BASE_URL=
 API_PORT=8000
 DATABASE_PATH=./storage/upelkes.sqlite
 AUTH_REQUIRED=true
 ADMIN_EMAIL=admin@upelkes.local
-ADMIN_PASSWORD=ganti-password-ini
+ADMIN_PASSWORD=ganti-password-awal-ini
 AUTH_SECRET=ganti-dengan-secret-acak-yang-aman
 ```
 
-Jangan commit `.env` atau memasukkan password produksi ke repository.
+Nilai `VITE_API_BASE_URL=/api` adalah pengaturan yang direkomendasikan. Vite akan meneruskan request API dan upload ke backend lokal; cara ini juga berfungsi ketika aplikasi dibuka dari HP. Jangan commit `.env`, password produksi, database operasional, atau upload pengguna.
 
-## Menjalankan saat development
+## Menjalankan aplikasi
 
-Jalankan backend dan frontend pada dua terminal terpisah.
+Jalankan backend dan frontend di dua terminal PowerShell terpisah.
 
-Terminal 1:
+Terminal 1 — backend dan migration database:
 
-```bash
+```powershell
 npm run dev:api
 ```
 
-Backend tersedia di `http://localhost:8000`.
+Terminal 2 — frontend:
 
-Terminal 2:
-
-```bash
+```powershell
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Frontend tersedia di `http://localhost:5173`.
+Buka [http://localhost:5173](http://localhost:5173). Migration database berjalan otomatis ketika backend pertama kali dimulai. Akun admin awal menggunakan `ADMIN_EMAIL` dan `ADMIN_PASSWORD` pada `.env`.
 
-Login awal menggunakan nilai `ADMIN_EMAIL` dan `ADMIN_PASSWORD` pada `.env`. Pada penggunaan pertama, segera ganti password melalui pengaturan aplikasi.
-
-Endpoint pemeriksaan backend:
-
-```text
-http://localhost:8000/api/health
-```
-
-Respons yang diharapkan:
+Pemeriksaan backend: [http://localhost:8000/api/health](http://localhost:8000/api/health)
 
 ```json
 {"status":"ok"}
 ```
 
-Migration database dijalankan otomatis ketika backend mulai. Perintah berikut tersedia jika ingin menjalankan migration secara eksplisit:
+Untuk menjalankan migration secara eksplisit:
 
-```bash
+```powershell
 npm run migrate
 ```
 
-## Akses dari komputer lain atau HP
+## Akses dari HP pada jaringan lokal
 
-### Jaringan lokal
+1. Sambungkan HP dan komputer server ke Wi-Fi/jaringan yang sama.
+2. Jalankan frontend dengan `--host 0.0.0.0` seperti contoh di atas.
+3. Cari IPv4 komputer server:
 
-Jalankan frontend dengan `--host 0.0.0.0`, kemudian akses alamat IP komputer server, misalnya:
+   ```powershell
+   ipconfig
+   ```
 
-```text
-http://192.168.1.10:5173
+4. Buka URL seperti `http://192.168.1.10:5173` dari browser HP.
+5. Jika tidak dapat dibuka, izinkan Node.js/Vite pada Windows Firewall untuk jaringan privat atau buka port `5173`.
+
+Jangan memakai `VITE_API_BASE_URL=http://localhost:8000/api` untuk penggunaan dari HP. `localhost` akan menunjuk ke HP itu sendiri; gunakan `/api` agar request diteruskan melalui Vite ke backend komputer server.
+
+## Build dan pemeriksaan
+
+```powershell
+npm run build
+npm test
 ```
 
-Komputer server harus tetap menyala dan firewall harus mengizinkan port yang digunakan.
+Untuk menguji hasil build secara lokal:
 
-### Akses melalui internet atau jaringan berbeda
-
-Untuk demo atau pengujian, port frontend dapat diteruskan menggunakan VS Code Ports/Developer Tunnel, Cloudflare Tunnel, atau ngrok.
-
-Forward port `5173`, bukan port database. Backend tetap berjalan di komputer server dan frontend meneruskan request `/api` ke backend lokal melalui konfigurasi proxy Vite.
-
-Setiap pengguna harus membuka URL tunnel yang sama. Dengan demikian semua pengguna memakai satu backend dan satu database yang sama.
-
-Developer Tunnel cocok untuk pengujian sementara. Untuk operasional resmi, gunakan server tetap dengan HTTPS, backup otomatis, dan database server seperti PostgreSQL atau MySQL.
-
-## Database bersama
-
-SQLite hanya menjadi database bersama jika semua pengguna mengakses satu instance backend yang sama. Jangan menjalankan salinan backend/database terpisah di komputer Divisi A dan Divisi B, karena datanya tidak akan tersinkron otomatis.
-
-Alur penggunaan bersama:
-
-```text
-Divisi A ─┐
-          ├── Frontend bersama ─── Backend tunggal ─── Database tunggal
-Divisi B ─┘
+```powershell
+npm run preview -- --host 0.0.0.0 --port 4173
 ```
 
-Aplikasi saat ini menggunakan REST API. Perubahan data tersimpan di database yang sama, tetapi pembaruan otomatis di layar pengguna lain memerlukan polling, Server-Sent Events, atau WebSocket.
+Proxy API dan upload juga aktif pada mode preview.
 
 ## Perintah yang tersedia
 
 | Perintah | Kegunaan |
 | --- | --- |
-| `npm run dev` | Menjalankan Vite frontend |
-| `npm run dev:api` | Menjalankan backend API |
-| `npm run dev:all` | Mencoba menjalankan frontend dan backend bersamaan |
-| `npm run start` | Menjalankan backend |
-| `npm run migrate` | Menjalankan migration database |
-| `npm run build` | Membuat build frontend produksi |
-| `npm run preview` | Menjalankan hasil build untuk preview |
-| `npm test` | Menjalankan test |
+| `npm run dev` | Menjalankan frontend Vite. |
+| `npm run dev:api` | Menjalankan backend API. |
+| `npm run dev:all` | Menjalankan frontend dan backend bersamaan. |
+| `npm run start` | Menjalankan backend tanpa Vite. |
+| `npm run migrate` | Menjalankan migration database. |
+| `npm run build` | Membuat build frontend produksi. |
+| `npm run preview` | Menjalankan hasil build untuk uji lokal. |
+| `npm test` | Menjalankan test backend dan utilitas frontend. |
+
+## Struktur proyek
+
+```text
+src/                    Frontend React
+src/modules/auth        Login dan autentikasi
+src/modules/dashboard   Dashboard, agenda, dan rating
+src/modules/fasilitator Data fasilitator dan import Excel
+src/modules/training    Katalog serta agenda pelatihan
+src/modules/cv          Pratinjau dan export CV PDF
+src/modules/monitoring  Monitoring kelengkapan fasilitator
+src/modules/settings    Pengaturan aplikasi dan akun
+server/                 API, SQLite, migration, dan repository
+storage/                Database SQLite dan file upload lokal
+docs/                   Kontrak API dan panduan kontribusi
+```
+
+## Penggunaan bersama dan deployment
+
+SQLite menjadi database bersama hanya apabila semua pengguna mengakses backend yang sama.
+
+```text
+Komputer/HP pengguna ── Frontend bersama ── Backend tunggal ── SQLite tunggal
+```
+
+Untuk operasional resmi, gunakan server yang selalu aktif, HTTPS, backup database dan `storage/uploads` secara rutin, serta reverse proxy yang meneruskan `/api` dan `/uploads` ke backend. Untuk jumlah pengguna atau data yang besar, pertimbangkan PostgreSQL atau MySQL.
 
 ## Troubleshooting
 
-### `EADDRINUSE: address already in use :::8000`
-
-Port `8000` sudah dipakai proses backend lain. Gunakan backend yang sudah aktif atau hentikan proses lama terlebih dahulu, lalu jalankan kembali `npm run dev:api`.
-
-Pemeriksaan port di Windows PowerShell:
+### Port `8000` atau `5173` sudah dipakai
 
 ```powershell
-netstat -ano | Select-String ':8000'
+netstat -ano | Select-String ':8000|:5173'
 ```
 
-### Halaman putih setelah menggunakan tunnel
+Gunakan port frontend lain bila perlu:
 
-1. Pastikan frontend lokal dapat dibuka di `http://localhost:5173`.
-2. Pastikan `.env` menggunakan `VITE_API_BASE_URL=/api`, bukan `localhost:8000`.
-3. Restart frontend setelah mengubah `.env`.
-4. Hapus port lama pada tab **PORTS**, jalankan ulang frontend, lalu forward kembali port `5173`.
-5. Gunakan URL forwarded yang baru.
-
-### Uji build tanpa mode development
-
-```bash
-npm run build
-npm run preview -- --host 0.0.0.0 --port 4173
+```powershell
+npm run dev -- --host 0.0.0.0 --port 5174
 ```
 
-Jika memakai preview, forward port `4173`.
+### Aplikasi terbuka dari HP, tetapi data tidak termuat
 
-## Reset data sebelum serah terima
+- Pastikan `npm run dev:api` dan Vite sama-sama aktif.
+- Akses URL IP komputer, bukan `localhost`, dari HP.
+- Pastikan `.env` memakai `VITE_API_BASE_URL=/api`.
+- Restart Vite setelah mengubah `.env`.
+- Periksa Windows Firewall pada jaringan privat.
 
-Sebelum aplikasi diberikan kepada pihak pengguna:
+### Foto atau dokumen tidak tampil
 
-1. Simpan backup arsip internal secara terpisah.
-2. Buat database baru dari migration atau kosongkan database operasional.
-3. Hapus data fasilitator, pelatihan, pendidikan, review, dan data dummy.
-4. Hapus file pada `storage/uploads` yang tidak boleh diserahkan.
-5. Ganti `ADMIN_EMAIL`, `ADMIN_PASSWORD`, dan `AUTH_SECRET`.
-6. Pastikan `.env` tidak ikut terunggah ke GitHub.
-7. Uji login, upload, backup, dan restore menggunakan data baru.
+Frontend harus dibuka melalui Vite/reverse proxy yang meneruskan `/uploads` ke backend. Lokasi default file upload adalah `storage/uploads`.
 
-Jangan menghapus folder migration karena migration diperlukan untuk membangun struktur database yang benar.
+## Sebelum serah terima atau deployment
 
-## Pembagian ownership pengembangan
+1. Cadangkan database dan folder `storage/uploads`.
+2. Hapus data dummy serta file upload yang tidak boleh diserahkan.
+3. Ganti email admin, password awal, dan `AUTH_SECRET`.
+4. Pastikan `.env`, database operasional, serta file upload pengguna tidak ikut terunggah ke Git.
+5. Uji login, input fasilitator, upload, export CV, import Excel, dan akses dari HP.
 
-| Modul | Owner | Lokasi utama |
-| --- | --- | --- |
-| Dashboard dan shell bersama | Raihan | `src/modules/dashboard`, `src/shared/layout` |
-| Fasilitator, import Excel, pelatihan, generate CV | Sofi | `src/modules/fasilitator`, `src/modules/training`, `src/modules/cv` |
-| Monitoring, rating/review, search, profil kompetensi | Daniel | `src/modules/monitoring`, `src/modules/search`, `src/modules/competency` |
-
-Aturan kontribusi detail tersedia di [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md). Kontrak endpoint tersedia di [`docs/DANIEL_API_CONTRACT.md`](docs/DANIEL_API_CONTRACT.md).
+Detail kontribusi tersedia di [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md). Kontrak endpoint tersedia di [`docs/DANIEL_API_CONTRACT.md`](docs/DANIEL_API_CONTRACT.md).

@@ -234,6 +234,7 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
 
           <div className="panel" style={{ marginBottom: 18 }}>
             <div className="panel-heading"><h3>3. Detail per Baris</h3></div>
+            <div className="data-table-scroll" role="region" aria-label="Detail hasil validasi agenda pelatihan" tabIndex={0}>
             <table className="data-table">
               <thead>
                 <tr><th>Nama Pelatihan</th><th>Fasilitator</th><th>Status</th><th>Catatan</th></tr>
@@ -253,9 +254,10 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="form-actions-row">
             <button className="primary-button" onClick={handleImport} disabled={importing || summary.valid === 0}>
               {importing ? 'Mengimport...' : 'Import Sekarang'}
             </button>
@@ -267,7 +269,7 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
       {importResult && (
         <div className="panel">
           <div className="panel-heading"><h3>Hasil Import</h3></div>
-          <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
+          <div className="import-summary-inline">
             <div><strong style={{ color: '#6fd6ae' }}>{importResult.created}</strong> <span className="muted">berhasil ditambahkan</span></div>
             <div><strong style={{ color: '#e6a8bd' }}>{importResult.failed.length}</strong> <span className="muted">gagal</span></div>
           </div>
@@ -281,7 +283,7 @@ export function ImportPelatihanExcelPage({ onNavigate }) {
               ))}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div className="form-actions-row">
             <button className="primary-button" onClick={() => onNavigate?.('pelatihan')}>Lihat Daftar Pelatihan</button>
             <button className="outline-button" onClick={reset}>Import File Lain</button>
           </div>
