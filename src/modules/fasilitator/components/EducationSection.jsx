@@ -24,9 +24,10 @@ function formatDateRange(startDate, endDate) {
 
 const EMPTY_FORM = { institution: '', degree: '', startDate: '', endDate: '' }
 
-export function EducationSection({ facilitatorId }) {
+export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsChange }) {
+  const isDraft = !facilitatorId && typeof onDraftItemsChange === 'function'
   const [educations, setEducations] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isDraft)
   const [error, setError] = useState(null)
 
   const [formOpen, setFormOpen] = useState(false)
@@ -37,10 +38,12 @@ export function EducationSection({ facilitatorId }) {
   const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
+    if (isDraft) return
     loadData()
-  }, [facilitatorId])
+  }, [facilitatorId, isDraft])
 
   function loadData() {
+    if (isDraft) return Promise.resolve()
     setLoading(true)
     setError(null)
     return getEducations(facilitatorId)
@@ -92,7 +95,12 @@ export function EducationSection({ facilitatorId }) {
     setSaving(true)
     setFormError(null)
     try {
-      if (editingId) {
+      if (isDraft) {
+        const nextItem = { id: editingId || `draft-education-${Date.now()}`, ...payload }
+        onDraftItemsChange(editingId
+          ? draftItems.map((item) => item.id === editingId ? nextItem : item)
+          : [...draftItems, nextItem])
+      } else if (editingId) {
         await updateEducation(facilitatorId, editingId, payload)
       } else {
         await createEducation(facilitatorId, payload)
@@ -107,6 +115,10 @@ export function EducationSection({ facilitatorId }) {
   }
 
   async function handleDelete(edu) {
+    if (isDraft) {
+      onDraftItemsChange(draftItems.filter((item) => item.id !== edu.id))
+      return
+    }
     const confirmed = window.confirm(`Hapus riwayat pendidikan "${edu.institution}"?`)
     if (!confirmed) return
     setDeletingId(edu.id)
@@ -188,7 +200,7 @@ export function EducationSection({ facilitatorId }) {
         <div className="empty-state"><span>◌</span><p>Memuat riwayat pendidikan...</p></div>
       ) : error ? (
         <div className="empty-state"><span>◌</span><p>Gagal memuat data.</p><small>{error}</small></div>
-      ) : educations.length === 0 ? (
+      ) : (isDraft ? draftItems : educations).length === 0 ? (
         <div className="empty-state">
           <span>◌</span>
           <p>Belum ada riwayat pendidikan.</p>
@@ -196,7 +208,7 @@ export function EducationSection({ facilitatorId }) {
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 2 }}>
-          {educations.map((edu) => (
+          {(isDraft ? draftItems : educations).map((edu) => (
             <div key={edu.id} className="activity-row" style={{ alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{edu.institution}</div>

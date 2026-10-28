@@ -6,7 +6,9 @@ import { resolveAssetUrl } from '../../../shared/utils/resolveAssetUrl'
 import { EducationSection } from '../components/EducationSection'
 import { CompetencySection } from '../components/CompetencySection'
 import { TrainingSection } from '../components/TrainingSection'
-import { getTrainingCatalog, getTrainings } from '../../training/api/trainingApi'
+import { getTrainingCatalog, getTrainings, createTraining } from '../../training/api/trainingApi'
+import { createEducation } from '../api/educationApi'
+import { uploadTrainingCertificate } from '../api/facilitatorUploadApi'
 import { Modal } from '../../../shared/components/Modal'
 
 const EMPTY_FORM = {
@@ -65,6 +67,9 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
   const [competencies, setCompetencies] = useState([])
   const [trainingNames, setTrainingNames] = useState([])
   const [trainingCatalog, setTrainingCatalog] = useState([])
+  const [educations, setEducations] = useState([])
+  const [relatedTrainings, setRelatedTrainings] = useState([])
+  const [teachingExperiences, setTeachingExperiences] = useState([])
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
@@ -181,6 +186,30 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
         catch (err) { uploadWarnings.push(`Dokumen pendukung gagal diunggah: ${err.message}`) }
       }
 
+      if (!isEdit) {
+        for (const education of educations) {
+          setSubmitStep('Menyimpan riwayat pendidikan...')
+          try {
+            const { id, ...educationPayload } = education
+            await createEducation(savedId, educationPayload)
+          } catch (err) {
+            uploadWarnings.push(`Riwayat pendidikan "${education.institution}" gagal disimpan: ${err.message}`)
+          }
+        }
+        for (const training of [...relatedTrainings, ...teachingExperiences]) {
+          setSubmitStep('Menyimpan riwayat pelatihan...')
+          try {
+            const { id, certificateFile, certificateUrl, ...trainingPayload } = training
+            const savedTraining = await createTraining(savedId, trainingPayload)
+            if (certificateFile) {
+              await uploadTrainingCertificate(savedId, savedTraining.id, certificateFile)
+            }
+          } catch (err) {
+            uploadWarnings.push(`Riwayat "${training.name}" gagal disimpan: ${err.message}`)
+          }
+        }
+      }
+
       if (uploadWarnings.length > 0) {
         setSubmitError(`Biodata tersimpan, tapi ada masalah: ${uploadWarnings.join(' ')} Kamu bisa unggah ulang dari sini.`)
         setSubmitting(false)
@@ -253,7 +282,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
 
       <CompetencySection value={competencies} onChange={setCompetencies} trainingCatalog={trainingCatalog} trainingNames={trainingNames} onTrainingNamesChange={setTrainingNames} />
 
-      {isEdit && (
+      {isEdit ? (
         <>
           <EducationSection facilitatorId={facilitatorId} />
           <TrainingSection
@@ -270,15 +299,12 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
             showRole={true}
           />
         </>
-      )}
-
-      {!isEdit && (
-        <div className="panel" style={{ marginBottom: 18 }}>
-          <p className="muted" style={{ fontSize: 12 }}>
-            Riwayat Pendidikan dan Pengalaman Mengajar/Pelatihan bisa ditambahkan setelah biodata ini disimpan
-            (kamu akan otomatis diarahkan ke halaman Edit-nya).
-          </p>
-        </div>
+      ) : (
+        <>
+          <EducationSection draftItems={educations} onDraftItemsChange={setEducations} />
+          <TrainingSection title="Pendidikan/Pelatihan yang Terkait Materi" category="related_training" showRole={false} includeCertificates draftItems={relatedTrainings} onDraftItemsChange={setRelatedTrainings} />
+          <TrainingSection title="Pengalaman Melatih/Mengajar" category="teaching_experience" showRole draftItems={teachingExperiences} onDraftItemsChange={setTeachingExperiences} />
+        </>
       )}
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

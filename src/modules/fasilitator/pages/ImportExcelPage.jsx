@@ -25,6 +25,21 @@ const HEADER_ALIASES = {
 
 const REQUIRED_FIELDS = ['nama']
 
+const TEMPLATE_HEADERS = [
+  'Nama', 'Email', 'No HP/WA', 'NIK', 'NIP', 'Gelar', 'Tempat Lahir',
+  'Tanggal Lahir (DD-MM-YYYY)', 'Pangkat/Golongan', 'Jabatan', 'Unit Kerja',
+  'Alamat Kantor', 'Alamat Rumah', 'Pelatihan', 'Materi',
+]
+
+const TEMPLATE_INSTRUCTIONS = [
+  ['Template Import Data Fasilitator'],
+  ['Cara penggunaan'],
+  ['1. Isi data pada sheet "Data Fasilitator". Kolom Nama wajib diisi.'],
+  ['2. Gunakan format tanggal DD-MM-YYYY, misalnya 17-08-1990.'],
+  ['3. Jika ada beberapa pelatihan atau materi, pisahkan dengan tanda titik koma (;). Urutannya dipasangkan, misalnya Pelatihan A; Pelatihan B dengan Materi A; Materi B.'],
+  ['4. Jangan ubah nama kolom pada baris pertama. Kolom yang tidak digunakan boleh dikosongkan.'],
+]
+
 function normalizeHeader(header) {
   return String(header ?? '').trim().toLowerCase().replace(/[\u00a0]/g, ' ').replace(/\s+/g, ' ')
 }
@@ -105,6 +120,21 @@ export function ImportExcelPage({ onNavigate }) {
   const [rows, setRows] = useState([]) // { data, status, errors, existingId, action }
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
+
+  function downloadTemplate() {
+    const dataSheet = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, Array(TEMPLATE_HEADERS.length).fill('')])
+    dataSheet['!cols'] = [26, 28, 16, 20, 20, 18, 18, 25, 20, 24, 26, 34, 34, 30, 30].map((wch) => ({ wch }))
+    dataSheet['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: 0, c: TEMPLATE_HEADERS.length - 1 } }) }
+    dataSheet['!freeze'] = { xSplit: 0, ySplit: 1 }
+
+    const instructionSheet = XLSX.utils.aoa_to_sheet(TEMPLATE_INSTRUCTIONS)
+    instructionSheet['!cols'] = [{ wch: 120 }]
+
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, dataSheet, 'Data Fasilitator')
+    XLSX.utils.book_append_sheet(workbook, instructionSheet, 'Petunjuk')
+    XLSX.writeFile(workbook, 'template-import-fasilitator.xlsx')
+  }
 
   async function handleFileSelect(e) {
     const file = e.target.files?.[0]
@@ -248,9 +278,12 @@ export function ImportExcelPage({ onNavigate }) {
               <p>Pilih file .xlsx atau .xls berisi data fasilitator untuk diproses.</p>
               <small>Kolom wajib: Nama · Pelatihan boleh diisi tanpa materi</small>
             </div>
-            <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="primary-button" onClick={() => fileInputRef.current?.click()}>Pilih File Excel</button>
+              <button type="button" className="outline-button" onClick={downloadTemplate}>↓ Unduh Template</button>
+            </div>
           </div>
-          <p className="import-upload-note">Kolom yang dikenali: Nama, Email, No HP/WA, NIK, NIP, Gelar, Tempat/Kota Lahir, Tanggal/Tgl Lahir, Pangkat/Golongan, Jabatan, Unit/Satuan Kerja, Alamat Kantor/Instansi, Alamat Rumah/Domisili, Pelatihan, dan Materi. Pisahkan beberapa nilai dengan tanda titik koma (;).</p>
+          <p className="import-upload-note">Belum punya formatnya? Unduh template, isi sheet <strong>Data Fasilitator</strong>, lalu unggah kembali. Kolom yang dikenali: Nama, Email, No HP/WA, NIK, NIP, Gelar, Tempat/Kota Lahir, Tanggal/Tgl Lahir, Pangkat/Golongan, Jabatan, Unit/Satuan Kerja, Alamat Kantor/Instansi, Alamat Rumah/Domisili, Pelatihan, dan Materi. Pisahkan beberapa nilai dengan tanda titik koma (;).</p>
         </div>
       )}
 

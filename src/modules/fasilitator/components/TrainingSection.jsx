@@ -15,9 +15,10 @@ function formatTrainingDate(start, end) {
   return first === last ? first : `${first} – ${last}`
 }
 
-export function TrainingSection({ facilitatorId, title, category, showRole, includeCertificates = false }) {
+export function TrainingSection({ facilitatorId, title, category, showRole, includeCertificates = false, draftItems = [], onDraftItemsChange }) {
+  const isDraft = !facilitatorId && typeof onDraftItemsChange === 'function'
   const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!isDraft)
   const [error, setError] = useState(null)
 
   const [formOpen, setFormOpen] = useState(false)
@@ -29,10 +30,12 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
   const [certificateFile, setCertificateFile] = useState(null)
 
   useEffect(() => {
+    if (isDraft) return
     loadData()
-  }, [facilitatorId, category])
+  }, [facilitatorId, category, isDraft])
 
   function loadData() {
+    if (isDraft) return Promise.resolve()
     setLoading(true)
     setError(null)
     return getTrainings(facilitatorId, category)
@@ -62,6 +65,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
       participantCount: item.participantCount ?? '',
       certificateUrl: item.certificateUrl ?? '',
     })
+    setCertificateFile(item.certificateFile ?? null)
     setFormError(null)
     setFormOpen(true)
   }
@@ -70,6 +74,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
     setFormOpen(false)
     setEditingId(null)
     setForm(emptyForm)
+    setCertificateFile(null)
     setFormError(null)
   }
 
@@ -103,7 +108,12 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
     setSaving(true)
     setFormError(null)
     try {
-      if (editingId) {
+      if (isDraft) {
+        const nextItem = { id: editingId || `draft-training-${Date.now()}`, ...payload, certificateFile, certificateUrl: form.certificateUrl }
+        onDraftItemsChange(editingId
+          ? draftItems.map((item) => item.id === editingId ? nextItem : item)
+          : [...draftItems, nextItem])
+      } else if (editingId) {
         const saved = await updateTraining(facilitatorId, editingId, payload)
         if (certificateFile) await uploadTrainingCertificate(facilitatorId, saved.id, certificateFile)
       } else {
@@ -120,6 +130,10 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
   }
 
   async function handleDelete(item) {
+    if (isDraft) {
+      onDraftItemsChange(draftItems.filter((draftItem) => draftItem.id !== item.id))
+      return
+    }
     const confirmed = window.confirm(`Hapus "${item.name}"?`)
     if (!confirmed) return
     setDeletingId(item.id)
@@ -177,11 +191,11 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
         <div className="empty-state"><span>◌</span><p>Memuat...</p></div>
       ) : error ? (
         <div className="empty-state"><span>◌</span><p>Gagal memuat data.</p><small>{error}</small></div>
-      ) : items.length === 0 ? (
+      ) : (isDraft ? draftItems : items).length === 0 ? (
         <p className="muted" style={{ fontSize: 12 }}>Belum ada data.</p>
       ) : (
         <div style={{ display: 'grid', gap: 2 }}>
-          {items.map((item) => (
+          {(isDraft ? draftItems : items).map((item) => (
             <div key={item.id} className="activity-row" style={{ alignItems: 'flex-start' }}>
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{item.name}</div>
