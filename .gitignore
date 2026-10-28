@@ -9,3 +9,5 @@ Thumbs.db
 storage/*.sqlite
 storage/*.sqlite-shm
 storage/*.sqlite-wal
+storage/uploads/*
+!storage/uploads/.gitkeep

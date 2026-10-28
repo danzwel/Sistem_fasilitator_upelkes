@@ -75,6 +75,8 @@ AUTH_SECRET=ganti-dengan-secret-acak-yang-aman
 
 Nilai `VITE_API_BASE_URL=/api` adalah pengaturan yang direkomendasikan. Vite akan meneruskan request API dan upload ke backend lokal; cara ini juga berfungsi ketika aplikasi dibuka dari HP. Jangan commit `.env`, password produksi, database operasional, atau upload pengguna.
 
+Database aplikasi tidak disertakan di repository. Karena itu, instalasi baru akan membuat database kosong dan hanya membuat akun admin awal dari nilai `ADMIN_EMAIL` serta `ADMIN_PASSWORD` di `.env`.
+
 ## Menjalankan aplikasi
 
 Jalankan backend dan frontend di dua terminal PowerShell terpisah.
