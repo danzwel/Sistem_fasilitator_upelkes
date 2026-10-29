@@ -1,6 +1,6 @@
 // src/modules/fasilitator/data/pendidikanPelatihanTerkaitData.js
 //
-// Mengisi tabel "Pendidikan/Pelatihan yang Terkait Materi" di CV
+// Mengisi tabel "Pelatihan yang Pernah Diikuti" di CV
 // (No | Nama Pendidikan/Pelatihan | Penyelenggara | Tahun).
 //
 // TODO(konfirmasi Adpen): definisi entitas ini masih ASUMSI SEMENTARA —

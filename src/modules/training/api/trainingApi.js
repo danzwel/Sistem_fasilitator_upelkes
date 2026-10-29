@@ -4,7 +4,7 @@ import { apiRequest } from '../../../shared/api/client'
 //
 // Satu endpoint dipakai untuk 2 kebutuhan CV yang beda, dibedakan lewat
 // field `category`:
-//   - 'related_training'    -> tabel "Pendidikan/Pelatihan Terkait Materi"
+//   - 'related_training'    -> tabel "Pelatihan yang Pernah Diikuti"
 //   - 'teaching_experience' -> tabel "Pengalaman Melatih/Mengajar"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'

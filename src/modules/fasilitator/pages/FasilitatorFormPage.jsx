@@ -287,7 +287,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
           <EducationSection facilitatorId={facilitatorId} />
           <TrainingSection
             facilitatorId={facilitatorId}
-            title="Pendidikan/Pelatihan yang Terkait Materi"
+            title="Pelatihan yang Pernah Diikuti"
             category="related_training"
             showRole={false}
             includeCertificates
@@ -302,7 +302,7 @@ export function FasilitatorFormPage({ onNavigate, facilitatorId, returnTo = 'fas
       ) : (
         <>
           <EducationSection draftItems={educations} onDraftItemsChange={setEducations} />
-          <TrainingSection title="Pendidikan/Pelatihan yang Terkait Materi" category="related_training" showRole={false} includeCertificates draftItems={relatedTrainings} onDraftItemsChange={setRelatedTrainings} />
+          <TrainingSection title="Pelatihan yang Pernah Diikuti" category="related_training" showRole={false} includeCertificates draftItems={relatedTrainings} onDraftItemsChange={setRelatedTrainings} />
           <TrainingSection title="Pengalaman Melatih/Mengajar" category="teaching_experience" showRole draftItems={teachingExperiences} onDraftItemsChange={setTeachingExperiences} />
         </>
       )}
