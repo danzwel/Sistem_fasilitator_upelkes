@@ -8,7 +8,7 @@ import { completenessScore, formatFacilitatorName } from '../../../shared/utils/
 import { downloadXlsx, formatExportDate } from '../../../shared/utils/csv'
 
 const CATEGORY_LABEL = {
-  related_training: 'Terkait Materi',
+  related_training: 'Pelatihan yang Pernah Diikuti',
   teaching_experience: 'Pengalaman Mengajar',
 }
 
@@ -619,7 +619,7 @@ export function PelatihanPage({ onNavigate }) {
           <form onSubmit={(e) => handleEditSubmit(e, editRow)}>
             {editError && <div style={{ color: '#e6a8bd', fontSize: 12, marginBottom: 10 }}>{editError}</div>}
             <div className="form-grid">
-              {!editForm.catalogOnly && <SearchableInput id="edit-training-category" label="Kategori" value={editForm.category === 'teaching_experience' ? 'Pengalaman Melatih/Mengajar' : 'Pendidikan/Pelatihan Terkait Materi'} options={['Pengalaman Melatih/Mengajar', 'Pendidikan/Pelatihan Terkait Materi']} onChange={(value) => setEditForm((p) => ({ ...p, category: value.startsWith('Pendidikan') ? 'related_training' : 'teaching_experience' }))} />}
+              {!editForm.catalogOnly && <SearchableInput id="edit-training-category" label="Kategori" value={editForm.category === 'teaching_experience' ? 'Pengalaman Melatih/Mengajar' : 'Pelatihan yang Pernah Diikuti'} options={['Pengalaman Melatih/Mengajar', 'Pelatihan yang Pernah Diikuti']} onChange={(value) => setEditForm((p) => ({ ...p, category: value === 'Pelatihan yang Pernah Diikuti' ? 'related_training' : 'teaching_experience' }))} />}
               <SearchableInput id="edit-training-facilitator" label={<>Fasilitator materi <span className="required-mark">*</span></>} value={facilitators.find((f) => String(f.id) === String(editForm.facilitatorId))?.name || ''} options={facilitators.map((f) => f.name)} placeholder="Ketik untuk mencari fasilitator..." required onChange={(value) => setEditForm((p) => ({ ...p, facilitatorId: facilitators.find((f) => f.name === value)?.id || '' }))} />
               <label className="form-field"><span>Nama Pelatihan/Kegiatan <span className="required-mark">*</span></span><input value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} required /></label>
               <label className="form-field">

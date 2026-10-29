@@ -174,7 +174,7 @@ export function FasilitatorDetailPage({ onNavigate, facilitatorId }) {
           </div>
 
           <div className="panel" style={{ marginBottom: 18 }}>
-            <div className="panel-heading"><h3>Pendidikan/Pelatihan yang Terkait Materi</h3></div>
+            <div className="panel-heading"><h3>Pelatihan yang Pernah Diikuti</h3></div>
             {relatedTrainings.length === 0 ? (
               <p className="muted" style={{ fontSize: 12 }}>Belum ada data.</p>
             ) : (

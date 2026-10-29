@@ -203,7 +203,7 @@ export function CvPreviewPage({ onNavigate, facilitatorId, cvReturnTo }) {
           </table>
         )}
 
-        <h2 className="cv-section-title">Pendidikan/Pelatihan yang Terkait Materi</h2>
+        <h2 className="cv-section-title">Pelatihan yang Pernah Diikuti</h2>
         {relatedTrainings.length === 0 ? (
           <p className="cv-empty">Belum ada data.</p>
         ) : (

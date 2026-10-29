@@ -6,23 +6,7 @@ import {
   deleteEducation,
 } from '../api/educationApi'
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
-
-function formatMonthYear(value) {
-  if (!value) return null
-  const [year, month] = value.split('-')
-  const monthName = MONTH_NAMES[Number(month) - 1]
-  return monthName ? `${monthName} ${year}` : value
-}
-
-function formatDateRange(startDate, endDate) {
-  const start = formatMonthYear(startDate)
-  const end = formatMonthYear(endDate)
-  if (start && end) return `${start} – ${end}`
-  return start || end || null
-}
-
-const EMPTY_FORM = { institution: '', degree: '', startDate: '', endDate: '' }
+const EMPTY_FORM = { institution: '', degree: '' }
 
 export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsChange }) {
   const isDraft = !facilitatorId && typeof onDraftItemsChange === 'function'
@@ -64,8 +48,6 @@ export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsC
     setForm({
       institution: edu.institution ?? '',
       degree: edu.degree ?? '',
-      startDate: edu.startDate ?? '',
-      endDate: edu.endDate ?? '',
     })
     setFormError(null)
     setFormOpen(true)
@@ -88,8 +70,6 @@ export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsC
     const payload = {
       institution: form.institution.trim(),
       degree: form.degree.trim(),
-      startDate: form.startDate || null,
-      endDate: form.endDate || null,
     }
 
     setSaving(true)
@@ -168,22 +148,6 @@ export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsC
                 placeholder="S2 Administrasi Pendidikan"
               />
             </label>
-            <label className="form-field">
-              <span>Bulan/Tahun Masuk</span>
-              <input
-                type="month"
-                value={form.startDate}
-                onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))}
-              />
-            </label>
-            <label className="form-field">
-              <span>Bulan/Tahun Lulus</span>
-              <input
-                type="month"
-                value={form.endDate}
-                onChange={(e) => setForm((prev) => ({ ...prev, endDate: e.target.value }))}
-              />
-            </label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button className="primary-button" type="submit" disabled={saving} style={{ marginTop: 0 }}>
@@ -213,7 +177,7 @@ export function EducationSection({ facilitatorId, draftItems = [], onDraftItemsC
               <div style={{ flex: 1 }}>
                 <div className="table-primary">{edu.institution}</div>
                 <div className="table-secondary">
-                  {[edu.degree, formatDateRange(edu.startDate, edu.endDate)].filter(Boolean).join(' · ')}
+                  {edu.degree}
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 10 }}>

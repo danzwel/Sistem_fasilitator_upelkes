@@ -90,7 +90,6 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
     if (showRole && !form.startDate) return setFormError('Tanggal mulai wajib diisi.')
     if (showRole && !form.endDate) return setFormError('Tanggal selesai wajib diisi.')
     if (showRole && form.endDate < form.startDate) return setFormError('Tanggal selesai tidak boleh sebelum tanggal mulai.')
-    if (category === 'related_training' && !form.certificateUrl && !certificateFile) return setFormError('Sertifikat pelatihan wajib diunggah.')
     const payload = {
       name: form.name.trim(),
       material: form.material.trim(),
@@ -176,7 +175,7 @@ export function TrainingSection({ facilitatorId, title, category, showRole, incl
               <label className="form-field"><span>Tanggal Selesai <span className="required-mark">*</span></span><input type="date" value={form.endDate} required onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))} /></label>
               <label className="form-field"><span>Jumlah Peserta</span><input type="number" min="0" value={form.participantCount} onChange={(e) => setForm((p) => ({ ...p, participantCount: e.target.value }))} /></label>
             </> : <label className="form-field"><span>Tanggal</span><input type="date" value={form.date} required={category === 'related_training'} onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))} /></label>}
-            {includeCertificates && <label className="form-field"><span>Sertifikat Pelatihan <span className="required-mark">*</span></span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required={!form.certificateUrl} onChange={(e) => setCertificateFile(e.target.files?.[0] || null)} />{form.certificateUrl && <a href={form.certificateUrl} target="_blank" rel="noreferrer">Sertifikat tersimpan — buka file</a>}<small className="muted">Wajib untuk pelatihan terkait materi.</small></label>}
+            {includeCertificates && <label className="form-field"><span>Sertifikat Pelatihan</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={(e) => setCertificateFile(e.target.files?.[0] || null)} />{form.certificateUrl && <a href={form.certificateUrl} target="_blank" rel="noreferrer">Sertifikat tersimpan — buka file</a>}<small className="muted">Opsional. Bisa ditambahkan kemudian.</small></label>}
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <button className="primary-button" type="submit" disabled={saving} style={{ marginTop: 0 }}>
